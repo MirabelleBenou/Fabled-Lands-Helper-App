@@ -33,7 +33,7 @@ Commit de livraison : **`84c88055dc425975055b285b43dcde9008cfabff`** (« Lot ban
 | P11 empreinte | `07b6f76c…3c72` | `07b6f76cdc25cf99b81333c21ccf0645ac3378eb23894fb00f9e3ce6a9573c72` |
 | P12 hors du code | seuls `banc/**` (et `lots/banc-v1/…`) | `git diff --name-only origin/main 84c8805` : `banc/**` et `lots/banc-v1/CADRAGE.md` (commit de cadrage) ; `git diff --stat origin/main 84c8805 -- PROMPT_DEV_FLH.md .gitattributes .gitignore .github CHANGELOG.md` vide |
 
-Comptes annoncés : 29 fichiers ajoutés sous `banc/` (dont 13 pour la mini-application d'essai et 2 pour ses sauvegardes et
+Comptes annoncés : 29 fichiers ajoutés sous `banc/` (dont 15 pour la mini-application d'essai et 2 pour ses sauvegardes et
 contrôles) ; 0 fichier ajouté, modifié ou retiré dans l'archive de déploiement ; 5 tests dans l'essai (2 fichiers) ; 6 clés
 de traduction dans l'essai (FR = EN) ; 0 `node_modules/` suivi.
 
@@ -202,13 +202,13 @@ autotest: 50/50
   avant mesure ; l'état est importé sur une page puis le rendu repart d'une page vierge (console et requêtes mesurées sur
   la page finale).
 - **Fichiers non nommés au §4** : `banc/lib/args.mjs`, `fichiers.mjs`, `serveur.mjs`, `contrat.mjs` (couverts par « `banc/lib/…`
-  au besoin ») ; `banc/essai/` compte 13 fichiers (dont `css/style.css`, `js/app.js`, `js/i18n.js`, `js/personnages.js`).
+  au besoin ») ; `banc/essai/` compte 15 fichiers (dont `css/style.css`, `js/app.js`, `js/i18n.js`, `js/personnages.js`).
 - La mini-application d'essai stocke son état en `localStorage` (suffisant pour l'essai ; le produit utilisera IndexedDB).
 
 ## 7 · La méthode
 
 - Début : 23 octobre 2026, 15:58 (CEST) ; livraison poussée vers 16:15 ; arrêt 1 puis reprise ; fin : 16:25 environ.
-- Interventions : une erreur d'usage du premier rituel de `caches` dans l'auto-essai (corrigée) ; D2/D3 d'abord en ECHEC (voir
+- Interventions : D2/D3 d'abord en ECHEC (voir
   ci-dessous) ; D13 instable sur `console` avant l'attente de réseau calme.
 - Ce qui m'a ralenti : (1) le Chromium du paquet s'arrête quand un contexte se ferme (`--single-process`) ; (2) `node --check`
   muet sur les modules sans `type: module`, qui faisait échouer D2 à la première passe ; (3) D3 faisait bouger `syntaxe` quand
