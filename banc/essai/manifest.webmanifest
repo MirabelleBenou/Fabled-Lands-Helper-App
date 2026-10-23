@@ -1,0 +1,8 @@
+{
+  "name": "Essai du banc",
+  "short_name": "Essai",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f1ea",
+  "theme_color": "#f4f1ea"
+}

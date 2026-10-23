@@ -1,0 +1,35 @@
+/* Lot banc-v1 — feuille de style de la mini-application d'essai : deux thèmes par variables. */
+:root,
+:root[data-theme="jour"] {
+  --fond: #f4f1ea;
+  --texte: #2b2a28;
+  --accent: #7a3b1e;
+}
+
+:root[data-theme="chandelle"] {
+  --fond: #1d1a16;
+  --texte: #e9dcc0;
+  --accent: #e0a458;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 16px;
+  background: var(--fond);
+  color: var(--texte);
+  font-family: sans-serif;
+}
+
+nav {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+nav a { color: var(--accent); }
+
+h1 { margin: 0 0 12px; color: var(--accent); }
+
+.perso { padding: 8px 12px; border: 1px solid var(--accent); }

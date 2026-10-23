@@ -1,0 +1,26 @@
+{
+  "cas": [
+    {
+      "nom": "accueil",
+      "route": "#/",
+      "etat": null,
+      "verifs": [
+        { "selecteur": "#titre", "texte": { "fr": "Essai du banc", "en": "Bench test" } },
+        { "selecteur": "#compteur", "texte": { "fr": "Personnages : 0", "en": "Characters: 0" } },
+        { "selecteur": "nav a", "compte": 2 },
+        { "selecteur": "#ecran", "visible": true }
+      ]
+    },
+    {
+      "nom": "perso",
+      "route": "#/perso",
+      "etat": "essai-sauvegardes/essai.json",
+      "verifs": [
+        { "selecteur": "#titre", "texte": { "fr": "Personnage", "en": "Character" } },
+        { "selecteur": "#nom", "texte": { "fr": "Essai", "en": "Essai" } },
+        { "selecteur": ".perso", "compte": 1 },
+        { "selecteur": "#nom", "visible": true }
+      ]
+    }
+  ]
+}

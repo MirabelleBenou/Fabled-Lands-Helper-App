@@ -1,0 +1,14 @@
+{
+  "name": "banc-flh",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Banc d'essai : mesure d'une archive déballée, à froid (lot banc-v1).",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@sparticuz/chromium": "153.0.0",
+    "playwright-core": "1.64.1"
+  }
+}
