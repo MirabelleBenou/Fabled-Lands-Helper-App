@@ -1,17 +1,25 @@
 // Lot v0.1 — les cinq écrans. Chaque vue rend la liste des nœuds de l'écran ; app.js les pose.
+// Lot v0.2 — l'aide « Installer l'application », la section « Application » des réglages, le stockage bloqué.
 // Le texte saisi ou importé n'entre jamais comme HTML : textContent ou création d'éléments.
 import { t } from './i18n.js';
 import { VERSION } from './version.js';
+import { etatCourant, installer, verifierMisesAJour } from './pwa.js';
 import { construireExport, nomFichierExport, personnageNeuf } from './sauvegarde.js';
 import {
+  ecrireReglage,
   enregistrerPersonnages,
   estPersistant,
   lirePersonnage,
+  lireReglage,
+  stockageDisponible,
   supprimerPersonnage,
   tousLesPersonnages,
 } from './stockage.js';
 
 const DELAI_CONFIRMATION = 5000;
+
+// Lot v0.2 — l'aide masquée pour cette ouverture de l'application, même si le réglage n'a pas pu s'écrire.
+let aideMasqueeCetteFois = false;
 
 // Crée un élément : `texte` (textContent), `classe`, `test` (data-test) ; les autres propriétés deviennent des attributs.
 function el(nom, proprietes = {}, ...enfants) {
@@ -41,8 +49,34 @@ function lieu(personnage) {
 
 const horodatage = (iso) => Date.parse(iso) || 0;
 
-// L'accueil : le bouton « Nouveau personnage », puis les personnages du plus récemment modifié au plus ancien.
+// Lot v0.2 — l'aide de l'accueil : encadrée à la plume, le bouton « Installer » ou le geste du menu, puis « Masquer ».
+function aideInstallation(etat) {
+  const section = el('section', { classe: 'cadre aide-installation', test: 'aide-installation' },
+    el('h2', { texte: t('installation.titre') }),
+    el('p', { texte: t('installation.texte') }));
+  const masquer = el('button', { classe: 'lien', type: 'button', test: 'masquer-aide', texte: t('installation.masquer') });
+  masquer.addEventListener('click', async () => {
+    aideMasqueeCetteFois = true;
+    await ecrireReglage('aide_installation', 'masquee').catch(() => {});
+    section.remove();
+  });
+  if (etat === 'proposable') {
+    const bouton = el('button', { classe: 'bouton', type: 'button', test: 'installer', texte: t('installation.bouton') });
+    bouton.addEventListener('click', () => installer());
+    section.append(el('div', { classe: 'actions' }, bouton, masquer));
+  } else {
+    section.append(el('p', { classe: 'legende', test: 'installer-geste', texte: t('installation.geste') }),
+      el('div', { classe: 'actions' }, masquer));
+  }
+  return section;
+}
+
+// L'accueil : le bouton « Nouveau personnage », puis les personnages du plus récemment modifié au plus ancien,
+// puis l'aide à l'installation. Stockage bloqué : le titre et l'avertissement, rien d'autre.
 export async function vueAccueil() {
+  if (!(await stockageDisponible())) {
+    return [el('h1', { texte: t('accueil.titre') }), el('p', { classe: 'erreur', test: 'stockage-bloque', texte: t('stockage.bloque') })];
+  }
   const personnages = await tousLesPersonnages().catch(() => []);
   personnages.sort((a, b) => horodatage(b.modifie_le) - horodatage(a.modifie_le));
   const nouveau = el('a', { classe: 'bouton', test: 'nouveau', href: '#/nouveau', texte: t('accueil.nouveau') });
@@ -53,7 +87,10 @@ export async function vueAccueil() {
         el('span', { classe: 'nom', test: 'nom', texte: p.nom }),
         el('span', { classe: 'ligne', texte: ligneProfession(p) }),
         el('span', { classe: 'ligne', test: 'lieu', texte: lieu(p) })))));
-  return [el('h1', { texte: t('accueil.titre') }), el('p', {}, nouveau), suite];
+  const etat = etatCourant();
+  const masquee = aideMasqueeCetteFois || (await lireReglage('aide_installation').catch(() => null)) === 'masquee';
+  const aide = etat === 'installee' || masquee ? [] : [aideInstallation(etat)];
+  return [el('h1', { texte: t('accueil.titre') }), el('p', {}, nouveau), suite, ...aide];
 }
 
 // Nouveau personnage : un nom obligatoire, une profession libre.
@@ -76,7 +113,12 @@ export async function vueNouveau(contexte) {
       nom.focus();
       return;
     }
-    await enregistrerPersonnages([personnageNeuf(nomSaisi, profession.value.trim())]).catch(() => {});
+    try {
+      await enregistrerPersonnages([personnageNeuf(nomSaisi, profession.value.trim())]);
+    } catch {
+      erreur.textContent = t('stockage.bloque');
+      return;
+    }
     contexte.naviguer('#/');
   });
   return [el('h1', { texte: t('nouveau.titre') }), formulaire];
@@ -122,7 +164,7 @@ function liste(nom, test, options, valeur, surChangement) {
   return select;
 }
 
-// Les réglages : langue, ambiance, sauvegarde (export, import, stockage), version.
+// Les réglages : langue, ambiance, sauvegarde (export, import, stockage), application (version, mises à jour, installation).
 export async function vueReglages(contexte) {
   const langue = liste('langue', 'langue',
     [['fr', t('langue.fr')], ['en', t('langue.en')]], contexte.langue(),
@@ -173,6 +215,27 @@ export async function vueReglages(contexte) {
     texte: `${t('reglages.stockage')} ${persiste ? t('reglages.stockage_oui') : t('reglages.stockage_non')}`,
   });
 
+  // Lot v0.2 — la section « Application » : la version, la vérification des mises à jour, l'installation.
+  const majMessage = el('p', { classe: 'message', role: 'status', test: 'maj-message' });
+  const verifier = el('button', { classe: 'bouton', type: 'button', test: 'verifier-maj', texte: t('maj.verifier') });
+  verifier.addEventListener('click', async () => {
+    majMessage.textContent = t('maj.verification');
+    const issue = await verifierMisesAJour();
+    if (issue === 'a_jour') majMessage.textContent = t('maj.a_jour');
+    else if (issue === 'telechargement') majMessage.textContent = t('maj.telechargement');
+    else majMessage.textContent = t('maj.impossible');
+  });
+  const etat = etatCourant();
+  let installation;
+  if (etat === 'installee') {
+    installation = el('p', { classe: 'legende', test: 'installee', texte: t('installation.installee') });
+  } else if (etat === 'proposable') {
+    installation = el('button', { classe: 'bouton', type: 'button', test: 'installer', texte: t('installation.bouton') });
+    installation.addEventListener('click', () => installer());
+  } else {
+    installation = el('p', { classe: 'legende', test: 'installer-geste', texte: t('installation.geste') });
+  }
+
   return [
     el('h1', { texte: t('reglages.titre') }),
     el('div', { classe: 'champ' }, el('label', { for: 'langue', texte: t('reglages.langue') }), langue),
@@ -183,7 +246,12 @@ export async function vueReglages(contexte) {
       el('div', { classe: 'actions' }, exporter, importer, fichier),
       message,
       stockage),
-    el('p', { classe: 'legende', test: 'version', texte: `${t('reglages.version')} ${VERSION}` }),
+    el('section', { classe: 'cadre', test: 'application' },
+      el('h2', { texte: t('reglages.application') }),
+      el('p', { classe: 'legende', test: 'version', texte: `${t('reglages.version')} ${VERSION}` }),
+      el('div', { classe: 'actions' }, verifier),
+      majMessage,
+      installation),
   ];
 }
 

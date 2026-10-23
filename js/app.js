@@ -1,6 +1,8 @@
 // Lot v0.1 — le démarrage : réglages, langue, ambiance, routes, data-pret, window.__FLH__, service worker.
+// Lot v0.2 — l'écoute de l'installation, le bandeau de mise à jour, l'enregistrement du service worker à jour.
 import { chargerLangue, choisirLangue, traduirePage } from './i18n.js';
 import { lire } from './sauvegarde.js';
+import { ecouterInstallation, surveillerControleur } from './pwa.js';
 import { ecrireReglage, enregistrerPersonnages, lireReglage } from './stockage.js';
 import { vueAccueil, vueApropos, vueFiche, vueNouveau, vueReglages } from './vues.js';
 
@@ -95,6 +97,16 @@ async function afficher() {
   racine.dataset.pret = '1';
 }
 
+// Lot v0.2 — l'écoute de l'installation commence avant le premier écran. Quand l'état change, seuls l'accueil et les
+// réglages se rendent à nouveau (un formulaire en cours ne se vide pas) ; avant le premier rendu, rien à refaire :
+// le premier écran lit l'état au moment de se rendre.
+let demarre = false;
+ecouterInstallation(() => {
+  if (!demarre) return;
+  const { vue } = analyserRoute(location.hash);
+  if (vue === vueAccueil || vue === vueReglages) afficher();
+});
+
 // Démarrage : les réglages enregistrés, puis la langue, puis le premier écran.
 const langueEnregistree = await lireReglage('langue').catch(() => null);
 const ambianceEnregistree = await lireReglage('ambiance').catch(() => null);
@@ -109,8 +121,15 @@ window.addEventListener('hashchange', () => {
   window.scrollTo(0, 0);
   afficher();
 });
+demarre = true;
 await afficher();
 
+// Lot v0.2 — le bandeau « nouvelle version prête » : seulement si la page avait déjà un contrôleur (pas au premier chargement).
+const bandeau = document.querySelector('[data-test=bandeau-maj]');
+document.querySelector('[data-test=recharger]').addEventListener('click', () => location.reload());
+surveillerControleur(() => { bandeau.hidden = false; });
+
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js', { type: 'module' }).catch((e) => console.warn('hors ligne indisponible', e));
+  // updateViaCache « none » : les modules que sw.js importe ne passent pas par le cache HTTP.
+  navigator.serviceWorker.register('sw.js', { type: 'module', updateViaCache: 'none' }).catch((e) => console.warn('hors ligne indisponible', e));
 }

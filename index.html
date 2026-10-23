@@ -29,6 +29,11 @@
     </header>
     <main id="ecran"></main>
   </div>
+  <!-- Lot v0.2 — le bandeau « nouvelle version prête » : caché jusqu'à ce qu'une version neuve prenne la main (js/app.js). -->
+  <div class="bandeau" data-test="bandeau-maj" role="status" hidden>
+    <p data-i18n="maj.bandeau"></p>
+    <button type="button" class="bouton" data-test="recharger" data-i18n="maj.recharger"></button>
+  </div>
   <script type="module" src="js/app.js"></script>
 </body>
 </html>

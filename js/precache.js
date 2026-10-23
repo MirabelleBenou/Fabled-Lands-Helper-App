@@ -20,6 +20,7 @@ export const PRECACHE = [
   'js/app.js',
   'js/i18n.js',
   'js/precache.js',
+  'js/pwa.js',
   'js/sauvegarde.js',
   'js/stockage.js',
   'js/version.js',

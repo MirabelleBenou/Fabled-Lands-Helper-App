@@ -45,6 +45,16 @@ async function transaction(magasin, mode, travail) {
   });
 }
 
+// Lot v0.2 — la base s'ouvre-t-elle ? Faux si IndexedDB est absent ou si le navigateur refuse l'ouverture.
+export async function stockageDisponible() {
+  try {
+    await ouvrir();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function tousLesPersonnages() {
   return transaction(PERSONNAGES, 'readonly', (magasin) => magasin.getAll());
 }

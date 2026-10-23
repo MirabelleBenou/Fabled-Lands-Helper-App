@@ -3,6 +3,17 @@
 *Une entrée par version, la plus récente en tête. Le texte de chaque entrée vient du cadrage, mot pour mot ; le dev y
 ajoute ses lignes de fichiers en sous-puces à deux espaces de retrait.*
 
+## v0.2 — 2026-10-23
+
+- L'installation et les mises à jour : une aide pour installer l'application sur l'écran d'accueil, quel que soit le navigateur ; un bandeau quand une nouvelle version est prête, et « Vérifier les mises à jour » dans les réglages ; une nouvelle icône, le monogramme « FL » du Carnet de route ; un message clair quand le navigateur bloque l'enregistrement.
+  - `js/pwa.js` : l'état d'installation, le bouton « Installer », la surveillance du contrôleur, la vérification des mises à jour
+  - `tests/pwa.test.js` : 10 tests (`etatInstallation`, `issueVerification`)
+  - `index.html`, `css/app.css` : le bandeau de mise à jour, le jeton `--ombre`, `button.lien`, la marge de l'aide
+  - `js/app.js`, `js/vues.js`, `js/stockage.js` : l'écoute de l'installation, le bandeau, l'enregistrement du service worker (`updateViaCache`), l'aide de l'accueil, la section « Application » des réglages, le stockage bloqué (`stockageDisponible`)
+  - `js/version.js`, `js/precache.js` : `v0.2`, le cache hors ligne (22 entrées)
+  - `i18n/fr.json`, `i18n/en.json` : les dictionnaires (61 clés)
+  - `icons/icon.svg`, `icons/icon-192.png`, `icons/icon-512.png`, `icons/icon-maskable-512.png` : le monogramme « FL »
+
 ## v0.1 — 2026-10-23
 
 - Le socle de Fabled Lands Helper : application installable et utilisable hors ligne, en français et en anglais, avec les ambiances Jour et Chandelle ; création, liste et suppression des personnages ; export et import d'un fichier de sauvegarde ; page « Droits et sources ».
