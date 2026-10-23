@@ -1,5 +1,5 @@
-# PROMPT DU DEV — Fabled Lands Helper (FLH) · v1
-### Établi le 23 octobre 2026 par CdP-1 · réutilisable d'un lot à l'autre · se lit avec le cadrage du lot
+# PROMPT DU DEV — Fabled Lands Helper (FLH) · v2
+### Établi le 23 octobre 2026 par CdP-1 (v2 après le lot banc-v1) · réutilisable d'un lot à l'autre · se lit avec le cadrage du lot
 
 > **Ce prompt se suffit à lui-même avec le cadrage du lot.** Il porte les conventions d'exécution, le déroulé, les
 > portes et la forme du rapport ; l'outillage est dans le banc. Le cadrage porte ce que fait le lot : ses règles, ses
@@ -31,6 +31,10 @@ en **français** ; l'interface est en **français et en anglais**, par dictionna
 **Le dépôt est public** (à partir du lot v0.1) : rien de privé dans un commit — ni donnée personnelle, ni sauvegarde
 réelle, ni secret.
 
+**L'application respecte le contrat du banc** (`banc/README.md`, § « Le contrat ») : où vivent la version, le cache hors
+ligne, la sauvegarde et les traductions, comment se forcent la langue et le thème, comment l'écran dit qu'il est prêt et
+comment un état se pose. Un écart au contrat fait mentir les mesures : il se signale, il ne se contourne pas.
+
 **Benoit est technicien, pas développeur ; il lit sur tablette ou téléphone, sans Python. S'il te lit, écris-lui court,
 ne lui demande jamais de lancer une commande, et nomme les choses par ce qu'il voit à l'écran.**
 
@@ -45,7 +49,7 @@ ne lui demande jamais de lancer une commande, et nomme les choses par ce qu'il v
 |---|---|
 | la racine | **le code** : la base, puis ta livraison — exactement ce que porte l'archive de déploiement |
 | `PROMPT_DEV_FLH.md` | ce prompt |
-| `banc/` | **l'outillage** : le rituel, la mesure commune base → livraison, le contrôle d'écran, les sauvegardes de référence, les fichiers d'état — **son `README.md` d'abord** *(absent tant que le lot `banc-v1` n'est pas fusionné)* |
+| `banc/` | **l'outillage** : le rituel, la mesure commune base → livraison, le contrôle d'écran, l'auto-essai, les sauvegardes de référence — **son `README.md` d'abord** |
 | `lots/<lot>/CADRAGE.md` | **la commande du lot** ; `ADDENDUM_<n>.md` à côté, s'il en vient : un addendum remplace ce qu'il dit remplacer |
 | `lots/<lot>/…` | ce que le cadrage ajoute (maquette du CdP, fixtures) : son §0 les nomme |
 
@@ -77,8 +81,11 @@ git --version`. Un écart avec ce qui suit ne t'arrête pas : adapte la commande
   code servi.
 - **Le délai d'une commande** se règle par appel (600 s au plus) ; au-delà, arrière-plan et fichier témoin.
 - **Exécuter crée des caches** qui faussent les comptes : mesures d'abord ; tests **sur une copie**.
-- **Les instruments obligatoires** : la syntaxe d'un script se contrôle par `node --check` ; un compte de clés de
-  traduction, de fichiers ou d'éléments d'écran se prend **à l'instrument du banc**, jamais au `grep`.
+- **Les instruments obligatoires** : la syntaxe se contrôle **par le rituel du banc**, qui passe chaque `.js` en module
+  (`node --input-type=module --check`, par l'entrée standard) — **`node --check fichier.js` seul est aveugle** sur un
+  fichier à `import` / `export` quand le dossier n'a pas de `package.json` en `"type": "module"` (mesuré au lot
+  banc-v1) ; un compte de clés de traduction, de fichiers ou d'éléments d'écran se prend **à l'instrument du banc**,
+  jamais au `grep`.
 - **Le hasard des dés** passe par `crypto.getRandomValues`, derrière une fonction de tirage injectable : les tests
   rejouent un jet avec une graine, jamais le tirage réel.
 
@@ -100,8 +107,8 @@ cd /home/claude/dev_<lot>/clone && git fetch --depth 1 origin main:refs/remotes/
 `/home/claude/dev_<lot>/banc` (`npm ci` là). Lis le cadrage, puis installe ce que demande ton lot.
 
 **2 — P0, la base.** Le rituel du banc sur `base/` (`banc/README.md`) : la sortie doit égaler, ligne pour ligne, le
-bloc « base » du cadrage ; tests sur une copie. **Une divergence : arrêt.** *Pour le lot `banc-v1`, le banc n'existe pas
-encore : P0 se réduit à ce que nomme le cadrage.*
+bloc « base » du cadrage. **Une divergence : arrêt.** Passe aussi `node autotest.mjs` dans ta copie du banc : il doit
+finir sur `autotest: n/n` ; sinon, arrêt (le banc est cassé, pas ton lot).
 
 **3 — La version.** **Elle est pré-autorisée et nommée par le cadrage** (`v0.1`, `v0.2`… ; `v0.1.1` pour un
 correctif) : tu la poses à l'endroit unique où le code la porte, et le banc vérifie qu'elle égale la première entrée du
@@ -156,11 +163,11 @@ prédiction. *Les commandes exactes sont au `banc/README.md`.*
 | P0 | la base égale le bloc « base » du cadrage ; la tête de `main` est le commit qu'il nomme | rituel sur `base/`, `git rev-parse` |
 | P1 | la version, comme le cadrage la prédit : code = première entrée du `CHANGELOG` = nom du cache hors ligne | rituel |
 | P2 | la liste et le compte des fichiers de l'archive, son poids ; aucun cache, aucun `node_modules/` | rituel |
-| P3 | syntaxe : `node --check` passe sur chaque `.js` servi | `mesure/` |
-| P4 | tests : le compte du cadrage, tout passe — y compris la relecture de chaque sauvegarde de référence de `banc/sauvegardes/` | copie de `mesure/` |
+| P3 | syntaxe : la ligne `syntaxe` du rituel, `ok` = total (contrôle en module) | rituel |
+| P4 | tests : le compte du cadrage, tout passe ; et la ligne `sauvegardes` : chaque sauvegarde de référence de `banc/sauvegardes/` se relit | rituel |
 | P5 | traductions : FR et EN ont les mêmes clés ; 0 clé manquante, 0 clé utilisée sans définition | rituel |
 | P6 | hors ligne : 0 URL externe dans le code servi ; la liste du cache hors ligne = les fichiers servis qu'elle doit couvrir | rituel |
-| P7 | écran : les contrôles DOM du cadrage passent dans Chromium à 800 × 1280 et à 412 × 915, en FR et en EN ; 0 erreur de console ; 0 débord horizontal | contrôle d'écran du banc |
+| P7 | écran : la dernière ligne du contrôle d'écran avec les contrôles du cadrage — toutes les vérifications passées, `console=0 externes=0 debords=0 horsligne_reel=ok` | `banc/ecran.mjs` |
 | P8 | ⛔ le format de sauvegarde : numéro de schéma inchangé, sauf lot qui le dit avec sa migration ; chaque sauvegarde de référence se relit | tests |
 | P9 | `CHANGELOG` : 0 « à compléter », la première entrée = la version livrée | rituel |
 | P10 | écart `base` → `mesure` : **la liste exacte** des fichiers modifiés, ajoutés, retirés = celle du cadrage | mesure commune du banc |
@@ -174,7 +181,8 @@ prédiction. *Les commandes exactes sont au `banc/README.md`.*
 - ⛔ **Le format de sauvegarde** (son numéro de schéma, ses champs), sauf autorisation écrite de Benoit portée par le
   cadrage, avec la migration.
 - ⛔ **Le livre** : aucun texte de section, aucune carte, aucune illustration, aucun logo — seuls les noms des règles et
-  des caractéristiques que le cadrage donne.
+  des caractéristiques, et les listes du livret d'aventure de l'éditeur (codes, cases de section) **que le cadrage
+  fournit**.
 - ⛔ **Aucune requête externe à l'exécution**, aucune dépendance à l'exécution, aucun CDN.
 - ⛔ **Tout ce que le cadrage ne nomme pas.** Pas de reformatage, pas d'« amélioration », pas de renommage.
 - ⛔ **`main`** : tu ne pousses que la branche de ton lot ; jamais `--force`, jamais de tag.
@@ -231,4 +239,5 @@ pas sûr.
 
 ---
 
-*Rédigé par CdP-1 le 23 octobre 2026, depuis le package méthode CdP v1.*
+*Rédigé par CdP-1 le 23 octobre 2026, depuis le package méthode CdP v1. v2 : contrôle de syntaxe par le rituel (en
+module), contrat du banc, auto-essai au P0, listes du livret (R5).*
