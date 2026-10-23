@@ -1,0 +1,70 @@
+{
+  "cas": [
+    {
+      "nom": "accueil-vide",
+      "route": "#/",
+      "etat": null,
+      "verifs": [
+        { "selecteur": "h1", "texte": { "fr": "Mes personnages", "en": "My characters" } },
+        { "selecteur": "[data-test=liste-vide]", "visible": true },
+        { "selecteur": "[data-test=perso]", "compte": 0 },
+        { "selecteur": "[data-test=nouveau]", "visible": true },
+        { "selecteur": "nav [data-test=onglet]", "compte": 3 }
+      ]
+    },
+    {
+      "nom": "accueil-exemple",
+      "route": "#/",
+      "etat": "etats/exemple.json",
+      "verifs": [
+        { "selecteur": "[data-test=perso]", "compte": 2 },
+        { "selecteur": "[data-test=perso] [data-test=nom]", "texte": { "fr": "Aldwen de Marlock", "en": "Aldwen de Marlock" } },
+        { "selecteur": "[data-test=perso] [data-test=lieu]", "texte": { "fr": "Livre 1 · Section 183", "en": "Book 1 · Section 183" } },
+        { "selecteur": "[data-test=liste-vide]", "compte": 0 }
+      ]
+    },
+    {
+      "nom": "nouveau",
+      "route": "#/nouveau",
+      "etat": null,
+      "verifs": [
+        { "selecteur": "h1", "texte": { "fr": "Nouveau personnage", "en": "New character" } },
+        { "selecteur": "input#nom", "compte": 1 },
+        { "selecteur": "input#profession", "compte": 1 },
+        { "selecteur": "[data-test=creer]", "visible": true }
+      ]
+    },
+    {
+      "nom": "fiche",
+      "route": "#/perso/exemple-aldwen",
+      "etat": "etats/exemple.json",
+      "verifs": [
+        { "selecteur": "h1", "texte": { "fr": "Aldwen de Marlock", "en": "Aldwen de Marlock" } },
+        { "selecteur": "[data-test=bientot]", "texte": { "fr": "La feuille d'aventure arrive dans la prochaine version.", "en": "The adventure sheet arrives in the next version." } },
+        { "selecteur": "[data-test=supprimer]", "visible": true }
+      ]
+    },
+    {
+      "nom": "reglages",
+      "route": "#/reglages",
+      "etat": null,
+      "verifs": [
+        { "selecteur": "h1", "texte": { "fr": "Réglages", "en": "Settings" } },
+        { "selecteur": "[data-test=langue]", "compte": 1 },
+        { "selecteur": "[data-test=ambiance]", "compte": 1 },
+        { "selecteur": "[data-test=exporter]", "visible": true },
+        { "selecteur": "[data-test=importer]", "visible": true },
+        { "selecteur": "[data-test=version]", "texte": { "fr": "Version v0.1", "en": "Version v0.1" } }
+      ]
+    },
+    {
+      "nom": "apropos",
+      "route": "#/apropos",
+      "etat": null,
+      "verifs": [
+        { "selecteur": "h1", "texte": { "fr": "Droits et sources", "en": "Rights and sources" } },
+        { "selecteur": "[data-test=apropos] p", "compte": 5 }
+      ]
+    }
+  ]
+}
