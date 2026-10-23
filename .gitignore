@@ -1,0 +1,22 @@
+# Secrets — seul .env.example est suivi, avec des valeurs factices
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# Dépendances et caches (ils faussent les comptes du rituel)
+node_modules/
+.npm/
+*.log
+
+# Sorties du banc (captures, mesures) : jamais dans le dépôt
+banc/sorties/
+
+# Sauvegardes réelles de parties : jamais dans un dépôt public
+# (les sauvegardes de référence du banc vivent dans banc/sauvegardes/, factices)
+*.flh.json
+
+# Système
+.DS_Store
+Thumbs.db

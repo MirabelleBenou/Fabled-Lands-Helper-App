@@ -1,0 +1,20 @@
+# Hors de l'archive de déploiement (git archive) : l'outillage, la commande
+# du dev, les dossiers de lots et la mécanique GitHub. L'archive d'un commit
+# = le site servi par GitHub Pages, à l'octet.
+banc/               export-ignore
+lots/               export-ignore
+PROMPT_DEV_*.md     export-ignore
+.github/            export-ignore
+.gitignore          export-ignore
+.gitattributes      export-ignore
+
+# Projet neuf : fins de ligne normalisées en LF.
+* text=auto eol=lf
+*.png   binary
+*.jpg   binary
+*.webp  binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
+*.pdf   binary
+*.zip   binary
