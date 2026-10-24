@@ -1,5 +1,5 @@
 # Lot v0.1 — publie le site sur GitHub Pages depuis « git archive » du commit poussé :
-# ce que sert Pages est l'archive du commit, à l'octet (banc/, lots/, .github/ n'y entrent pas).
+# ce que sert Pages est l'archive du commit, à l'octet (banc/ et .github/ n'y entrent pas).
 name: Publier sur GitHub Pages
 
 on:

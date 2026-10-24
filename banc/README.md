@@ -18,8 +18,7 @@ Quatre instruments, chacun une commande `node …` :
 | `ecran.mjs` | rend l'application dans Chromium et vérifie l'écran |
 | `autotest.mjs` | prouve que les trois autres attrapent chacun le défaut qu'ils doivent attraper |
 
-**Un instrument ne juge pas** : il mesure. La comparaison aux valeurs attendues (le cadrage, la prédiction) est faite
-par le chef de projet et par le dev. Le code de sortie est `0` quand la mesure a pu se faire, quoi qu'elle mesure ;
+**Un instrument ne juge pas** : il mesure. La comparaison aux valeurs attendues se fait hors de l'instrument. Le code de sortie est `0` quand la mesure a pu se faire, quoi qu'elle mesure ;
 il est non nul (`2`) seulement quand l'instrument lui-même échoue (dossier introuvable, Chromium qui ne démarre pas,
 fichier de contrôles illisible), avec la raison sur la sortie d'erreur.
 
@@ -181,7 +180,7 @@ ecran: rendus=<n> verifs=<ok>/<n> console=<n> externes=<n> debords=<n> horsligne
 
 **Les captures** : une par rendu, page entière, en PNG, dans le dossier de sortie (par défaut `banc/sorties/`, ignoré
 par git) : `<cas>_<largeur>_<langue>_<theme>.png` (les caractères autres que lettres, chiffres, `.`, `_`, `-` du nom
-du cas y sont remplacés par `_`). Elles sont pour le chef de projet ; un dev ne les ouvre pas, il lit les lignes.
+du cas y sont remplacés par `_`). Elles se regardent à part ; le contrôle, lui, se lit sur les lignes.
 
 ### L'auto-essai
 
@@ -269,7 +268,7 @@ on lit la dernière ligne et on cherche `ECHEC`.
 Le choix de **l'endroit** où planter un défaut est ce qui garantit « et elle seule » : un défaut qui ferait bouger une
 deuxième ligne se replante ailleurs, on ne relâche pas la vérification.
 
-## 6 · Le rituel de réception
+## 6 · Le rituel de vérification
 
 Pour un lot livré sur la branche `lot/<lot>`, avec `base/` (l'archive de `main`) et `mesure/` (l'archive du commit de
 livraison, `git archive HEAD`), déballées hors du clone :
@@ -279,18 +278,18 @@ livraison, `git archive HEAD`), déballées hors du clone :
    node banc/rituel.mjs base
    node banc/rituel.mjs mesure
    ```
-   La sortie sur `base/` égale le bloc « base » du cadrage, ligne pour ligne ; celle sur `mesure/` se compare à la
-   prédiction (les deltas du cadrage).
+   La sortie sur `base/` égale les valeurs attendues de la base, ligne pour ligne ; celle sur `mesure/` se compare aux
+   valeurs attendues après le changement.
 2. **La mesure commune.**
    ```sh
    node banc/ecart.mjs base mesure
    ```
-   La liste des fichiers ajoutés, modifiés, retirés égale celle du cadrage.
+   La liste des fichiers ajoutés, modifiés, retirés égale celle qui est attendue.
 3. **Le contrôle d'écran, avec les contrôles du lot.**
    ```sh
    node banc/ecran.mjs mesure <controles du lot>.json --sortie <dossier hors du clone>
    ```
-   Les lignes de rendu et la dernière ligne se comparent aux critères du cadrage ; les captures sont pour le chef de projet.
+   Les lignes de rendu et la dernière ligne se comparent aux critères attendus ; les captures se regardent à part.
 
 Avant un premier usage, ou quand on doute du banc : `node banc/autotest.mjs` doit finir par `autotest: <n>/<n>`, sans
 aucune ligne `ECHEC`.
