@@ -3,6 +3,19 @@
 *Une entrée par version, la plus récente en tête. Le texte de chaque entrée vient du cadrage, mot pour mot ; le dev y
 ajoute ses lignes de fichiers en sous-puces à deux espaces de retrait.*
 
+## v0.3 — 2026-10-24
+
+- La feuille d'aventure : la création à partir d'un des neuf personnages pré-tirés de l'éditeur ou par saisie libre ; les Statistiques (Endurance, Niveau, compétences avec leurs bonus et malus, Défense calculée, titres et honneurs, histoire), les Possessions (Bourse en chardes, douze possessions transportées) et les Cultes (bénédictions, malédictions, résurrection) ; les personnages existants reçoivent une feuille vierge (sauvegarde au schéma 2).
+  - `js/feuille.js` : la création (pré-tiré, saisie libre) et la fiche en trois rubriques, l'enregistrement de chaque changement, le retour du focus
+  - `js/regles.js` : les règles de calcul (`totalCompetence`, `defense`, `signe`) et les bornes de chaque modification
+  - `js/pretires.js`, `js/liens.js` : les neuf pré-tirés de l'éditeur et l'adresse de leurs fiches
+  - `js/sauvegarde.js`, `js/stockage.js` : le schéma 2, sa complétion (`completerPersonnage`) à l'import comme à la lecture du stockage, la migration du schéma 1
+  - `js/app.js`, `js/vues.js` : les routes de la création et de la fiche, le haut de page seulement quand la page change ; le paragraphe des pré-tirés dans « Droits et sources »
+  - `css/app.css` : la feuille de style du lot
+  - `js/version.js`, `js/precache.js` : `v0.3`, le cache hors ligne (26 entrées)
+  - `i18n/fr.json`, `i18n/en.json` : les dictionnaires (137 clés)
+  - `tests/regles.test.js`, `tests/pretires.test.js`, `tests/sauvegarde.test.js` : 25, 8 et 19 tests neufs ; les tests du schéma 1 adaptés au schéma 2
+
 ## v0.2 — 2026-10-23
 
 - L'installation et les mises à jour : une aide pour installer l'application sur l'écran d'accueil, quel que soit le navigateur ; un bandeau quand une nouvelle version est prête, et « Vérifier les mises à jour » dans les réglages ; une nouvelle icône, le monogramme « FL » du Carnet de route ; un message clair quand le navigateur bloque l'enregistrement.

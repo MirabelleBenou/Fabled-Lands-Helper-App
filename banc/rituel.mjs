@@ -1,5 +1,6 @@
 // Lot banc-v1 — le rituel : mesure un dossier (une archive déballée) et écrit onze lignes.
 // Usage : node banc/rituel.mjs <dossier> [--sauvegardes <dossier>] [--detail]
+// Lot v0.3 — horsligne : les liens déclarés de js/liens.js (son export LIENS) ne comptent pas dans « externes ».
 import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
@@ -76,7 +77,7 @@ lignes.push(`syntaxe: ${syntaxeOk}/${scripts.length}`);
 
 // tests, sauvegardes et modules du contrat : sur une copie temporaire, supprimée ensuite
 const fichiersTests = chemins.filter((c) => c.startsWith('tests/') && c.endsWith('.test.js'));
-let contrat = { version: null, cacheName: null, precache: null, schema: null, lues: 0 };
+let contrat = { version: null, cacheName: null, precache: null, schema: null, lues: 0, liens: null };
 let ligneTests = 'tests: aucun';
 const racineTmp = mkdtempSync(join(tmpdir(), 'banc-rituel-'));
 try {
@@ -143,14 +144,18 @@ else {
   lignes.push(`i18n: fr=${clesFr.size} en=${clesEn.size} manquantes=${manquantes} orphelines=${orphelines} inconnues=${inconnues}`);
 }
 
-// horsligne
+// horsligne. Lot v0.3 — une occurrence située dans js/liens.js et qui commence une des valeurs de son export
+// LIENS (les adresses que l'utilisateur ouvre d'un toucher) ne compte pas ; la même adresse ailleurs compte.
 const EXTENSIONS_EXTERNES = new Set(['.html', '.js', '.mjs', '.css', '.json', '.webmanifest']);
+const liensDeclares = Array.isArray(contrat.liens) ? contrat.liens : [];
 let externes = 0;
 for (const c of chemins.filter(horsTests)) {
   if (!EXTENSIONS_EXTERNES.has(extname(c))) continue;
   const texte = lireTexte(dossier, c);
   for (const m of texte.matchAll(/https?:\/\//g)) {
-    if (!texte.startsWith('http://www.w3.org/', m.index)) externes += 1;
+    if (texte.startsWith('http://www.w3.org/', m.index)) continue;
+    if (c === 'js/liens.js' && liensDeclares.some((lien) => texte.startsWith(lien, m.index))) continue;
+    externes += 1;
   }
 }
 const aCouvrir = chemins.filter((c) => horsTests(c) && !c.endsWith('.md') && !basename(c).startsWith('LICENSE'));

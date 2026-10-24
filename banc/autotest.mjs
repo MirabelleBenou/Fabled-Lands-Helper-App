@@ -1,6 +1,7 @@
 // Lot banc-v1 — l'auto-essai : la preuve que le banc mesure ce qu'il dit.
 // Il passe les instruments sur la mini-application d'essai saine, puis sur des copies portant chacune
 // un seul défaut planté (D1 à D16), et vérifie que la mesure visée bouge comme attendu, et elle seule.
+// Lot v0.3 — D17 et D18 : les liens déclarés de js/liens.js (LIENS) ne comptent pas dans « externes », ailleurs si.
 // Usage : node banc/autotest.mjs [--sortie <dossier>]   (captures de l'essai sain ; défaut banc/sorties/autotest)
 import { appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
@@ -217,6 +218,41 @@ try {
     const c = copier(d.id);
     d.planter(c);
     d.juger(lireEcran(ecran(c)));
+  }
+
+  // ---- Lot v0.3 — D17 et D18 : les liens déclarés (js/liens.js) -----------------------------------------
+  // La référence : l'essai muni d'un js/liens.js à LIENS vide, déclaré dans PRECACHE ; D17 et D18 s'y comparent,
+  // pour que seul le défaut planté puisse faire bouger une ligne.
+  {
+    const ADRESSE = 'https://exemple.invalid/fiche/';
+    const avecLiens = (nom, liens) => {
+      const c = copier(nom);
+      ecrire(c, 'js/liens.js', `// Lien déclaré planté par l'auto-essai.\nexport const LIENS = ${liens};\n`);
+      remplacer(c, 'js/precache.js', "  'js/i18n.js',\n", "  'js/i18n.js',\n  'js/liens.js',\n");
+      return c;
+    };
+    const reference = parLigne(rituel(avecLiens('liens-reference', '{}')));
+    verifier('D17', 'référence : l\'essai avec un js/liens.js à LIENS vide, horsligne à zéro',
+      entier(reference.horsligne, 'externes') === 0 && entier(reference.horsligne, 'manquants') === 0 && entier(reference.horsligne, 'en_trop') === 0,
+      reference.horsligne);
+    const LIBRES_LIENS = new Set(['fichiers', 'poids', 'empreinte']);
+    const autresBougees = (mesure, cible) => Object.keys(reference)
+      .filter((k) => k !== cible && !LIBRES_LIENS.has(k) && mesure[k] !== reference[k]);
+
+    const c17 = avecLiens('D17', `{ fiche: '${ADRESSE}' }`);
+    const m17 = parLigne(rituel(c17));
+    verifier('D17', 'une adresse ajoutée à LIENS dans js/liens.js : horsligne inchangé (externes reste à 0)',
+      m17.horsligne === reference.horsligne && entier(m17.horsligne, 'externes') === 0, `${reference.horsligne} -> ${m17.horsligne}`);
+    const b17 = autresBougees(m17, 'horsligne');
+    verifier('D17', 'aucune autre ligne n\'a bougé (hors fichiers, poids, empreinte)', b17.length === 0, b17.length === 0 ? 'aucune autre' : b17.join(', '));
+
+    const c18 = avecLiens('D18', `{ fiche: '${ADRESSE}' }`);
+    appendFileSync(join(c18.app, 'js/app.js'), `\n// ${ADRESSE}\n`);
+    const m18 = parLigne(rituel(c18));
+    const attendue18 = ajuster(reference.horsligne, { externes: 1 });
+    verifier('D18', 'la même adresse écrite dans un autre fichier : externes +1', m18.horsligne === attendue18, `${reference.horsligne} -> ${m18.horsligne}`);
+    const b18 = autresBougees(m18, 'horsligne');
+    verifier('D18', 'seule cette ligne a bougé (hors fichiers, poids, empreinte)', b18.length === 0, b18.length === 0 ? 'aucune autre' : b18.join(', '));
   }
 
   // ---- D16 : la mesure commune ---------------------------------------------------------------------

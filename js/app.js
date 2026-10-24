@@ -1,10 +1,12 @@
 // Lot v0.1 — le démarrage : réglages, langue, ambiance, routes, data-pret, window.__FLH__, service worker.
 // Lot v0.2 — l'écoute de l'installation, le bandeau de mise à jour, l'enregistrement du service worker à jour.
+// Lot v0.3 — les routes de la création et de la fiche (js/feuille.js) ; le haut de page seulement quand la page change.
 import { chargerLangue, choisirLangue, traduirePage } from './i18n.js';
 import { lire } from './sauvegarde.js';
 import { ecouterInstallation, surveillerControleur } from './pwa.js';
 import { ecrireReglage, enregistrerPersonnages, lireReglage } from './stockage.js';
-import { vueAccueil, vueApropos, vueFiche, vueNouveau, vueReglages } from './vues.js';
+import { vueAccueil, vueApropos, vueReglages } from './vues.js';
+import { vueFiche, vueNouveau } from './feuille.js';
 
 const racine = document.documentElement;
 const ecran = document.getElementById('ecran');
@@ -38,26 +40,52 @@ async function importer(objet) {
 }
 window.__FLH__ = { importer };
 
-// Les routes sont des ancres. Toute route inconnue mène à l'accueil.
+// Les routes sont des ancres. Toute route inconnue mène à l'accueil. `page` nomme la page affichée : le haut de
+// page n'est remis que quand elle change (lot v0.3).
+const RUBRIQUES = ['statistiques', 'possessions', 'cultes'];
+
 function analyserRoute(hash) {
   const morceaux = hash.replace(/^#\/?/, '').split('/');
-  if (morceaux[0] === 'nouveau' && morceaux.length === 1) return { vue: vueNouveau, onglet: 'accueil' };
-  if (morceaux[0] === 'reglages' && morceaux.length === 1) return { vue: vueReglages, onglet: 'reglages' };
-  if (morceaux[0] === 'apropos' && morceaux.length === 1) return { vue: vueApropos, onglet: 'apropos' };
-  if (morceaux[0] === 'perso' && morceaux.length === 2 && morceaux[1] !== '') {
-    try {
-      return { vue: vueFiche, onglet: 'accueil', id: decodeURIComponent(morceaux[1]) };
-    } catch {
-      return { vue: vueAccueil, onglet: 'accueil' };
+  const accueil = { vue: vueAccueil, onglet: 'accueil', page: 'accueil' };
+  if (morceaux[0] === 'nouveau') {
+    // Lot v0.3 — #/nouveau, #/nouveau/pretire[/<id>] : le mode pré-tiré ; #/nouveau/libre : la saisie libre.
+    if (morceaux.length === 1 || (morceaux[1] === 'pretire' && morceaux.length <= 3)) {
+      let choix = null;
+      try {
+        choix = morceaux.length === 3 ? decodeURIComponent(morceaux[2]) : null;
+      } catch {
+        choix = null;
+      }
+      return { vue: vueNouveau, onglet: 'accueil', page: 'nouveau/pretire', mode: 'pretire', choix };
     }
+    if (morceaux[1] === 'libre' && morceaux.length === 2) {
+      return { vue: vueNouveau, onglet: 'accueil', page: 'nouveau/libre', mode: 'libre', choix: null };
+    }
+    return accueil;
   }
-  return { vue: vueAccueil, onglet: 'accueil' };
+  if (morceaux[0] === 'reglages' && morceaux.length === 1) return { vue: vueReglages, onglet: 'reglages', page: 'reglages' };
+  if (morceaux[0] === 'apropos' && morceaux.length === 1) return { vue: vueApropos, onglet: 'apropos', page: 'apropos' };
+  // Lot v0.3 — #/perso/<id>[/<rubrique>[/<déplié>]] ; une rubrique inconnue montre Statistiques.
+  if (morceaux[0] === 'perso' && morceaux.length >= 2 && morceaux.length <= 4 && morceaux[1] !== '') {
+    let id;
+    try {
+      id = decodeURIComponent(morceaux[1]);
+    } catch {
+      return accueil;
+    }
+    const rubrique = RUBRIQUES.includes(morceaux[2]) ? morceaux[2] : 'statistiques';
+    const deplie = morceaux[2] === 'statistiques' && morceaux.length === 4 ? morceaux[3] : null;
+    return { vue: vueFiche, onglet: 'accueil', page: `perso/${id}/${rubrique}`, id, rubrique, deplie };
+  }
+  return accueil;
 }
 
 const contexte = {
   langue: () => etat.langue,
   ambiance: () => etat.ambiance,
   naviguer: (ancre) => { location.hash = ancre; },
+  // Lot v0.3 — l'écran se rend à nouveau (après un changement enregistré sur la fiche).
+  rafraichir: () => afficher(),
   importer,
   async changerLangue(code) {
     await chargerLangue(code);
@@ -84,7 +112,7 @@ async function afficher() {
   const route = analyserRoute(location.hash);
   let noeuds = [];
   try {
-    noeuds = await route.vue(contexte, route.id);
+    noeuds = await route.vue(contexte, route);
   } catch (e) {
     console.warn('écran non rendu', e);
   }
@@ -117,8 +145,11 @@ racine.lang = etat.langue;
 await chargerLangue(etat.langue);
 traduirePage();
 
+let pageAffichee = analyserRoute(location.hash).page;
 window.addEventListener('hashchange', () => {
-  window.scrollTo(0, 0);
+  const page = analyserRoute(location.hash).page;
+  if (page !== pageAffichee) window.scrollTo(0, 0);
+  pageAffichee = page;
   afficher();
 });
 demarre = true;

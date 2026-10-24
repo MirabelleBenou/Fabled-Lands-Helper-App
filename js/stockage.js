@@ -1,4 +1,7 @@
 // Lot v0.1 — IndexedDB, base « flh » : les personnages et les réglages. Seul ce module y touche.
+// Lot v0.3 — un personnage lu passe par la complétion de l'import : une fiche de la v0.2 s'ouvre au schéma 2.
+import { completerPersonnage } from './sauvegarde.js';
+
 const BASE = 'flh';
 const VERSION_BASE = 1;
 const PERSONNAGES = 'personnages';
@@ -55,12 +58,23 @@ export async function stockageDisponible() {
   }
 }
 
-export function tousLesPersonnages() {
-  return transaction(PERSONNAGES, 'readonly', (magasin) => magasin.getAll());
+// Lot v0.3 — la complétion, ou null si elle refuse la fiche stockée (sans id ou sans nom).
+function completerOuNul(brut) {
+  try {
+    return completerPersonnage(brut);
+  } catch {
+    return null;
+  }
+}
+
+export async function tousLesPersonnages() {
+  const bruts = await transaction(PERSONNAGES, 'readonly', (magasin) => magasin.getAll());
+  return bruts.map(completerOuNul).filter((personnage) => personnage !== null);
 }
 
 export async function lirePersonnage(id) {
-  return (await transaction(PERSONNAGES, 'readonly', (magasin) => magasin.get(id))) ?? null;
+  const brut = await transaction(PERSONNAGES, 'readonly', (magasin) => magasin.get(id));
+  return brut === undefined ? null : completerOuNul(brut);
 }
 
 // Enregistre (remplace ou ajoute, par id) ; au premier enregistrement, demande la protection du stockage.

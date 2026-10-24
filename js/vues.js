@@ -1,28 +1,18 @@
 // Lot v0.1 — les cinq écrans. Chaque vue rend la liste des nœuds de l'écran ; app.js les pose.
 // Lot v0.2 — l'aide « Installer l'application », la section « Application » des réglages, le stockage bloqué.
+// Lot v0.3 — la création et la fiche passent dans js/feuille.js ; le paragraphe des pré-tirés dans « Droits et sources ».
 // Le texte saisi ou importé n'entre jamais comme HTML : textContent ou création d'éléments.
 import { t } from './i18n.js';
 import { VERSION } from './version.js';
 import { etatCourant, installer, verifierMisesAJour } from './pwa.js';
-import { construireExport, nomFichierExport, personnageNeuf } from './sauvegarde.js';
-import {
-  ecrireReglage,
-  enregistrerPersonnages,
-  estPersistant,
-  lirePersonnage,
-  lireReglage,
-  stockageDisponible,
-  supprimerPersonnage,
-  tousLesPersonnages,
-} from './stockage.js';
-
-const DELAI_CONFIRMATION = 5000;
+import { construireExport, nomFichierExport } from './sauvegarde.js';
+import { ecrireReglage, estPersistant, lireReglage, stockageDisponible, tousLesPersonnages } from './stockage.js';
 
 // Lot v0.2 — l'aide masquée pour cette ouverture de l'application, même si le réglage n'a pas pu s'écrire.
 let aideMasqueeCetteFois = false;
 
 // Crée un élément : `texte` (textContent), `classe`, `test` (data-test) ; les autres propriétés deviennent des attributs.
-function el(nom, proprietes = {}, ...enfants) {
+export function el(nom, proprietes = {}, ...enfants) {
   const element = document.createElement(nom);
   for (const [cle, valeur] of Object.entries(proprietes)) {
     if (cle === 'texte') element.textContent = valeur;
@@ -34,9 +24,7 @@ function el(nom, proprietes = {}, ...enfants) {
   return element;
 }
 
-const lienRetour = () => el('a', { classe: 'lien', href: '#/', texte: t('fiche.retour') });
-
-function ligneProfession(personnage) {
+export function ligneProfession(personnage) {
   const niveau = `${t('perso.niveau')} ${personnage.niveau}`;
   return personnage.profession ? `${personnage.profession} · ${niveau}` : niveau;
 }
@@ -91,69 +79,6 @@ export async function vueAccueil() {
   const masquee = aideMasqueeCetteFois || (await lireReglage('aide_installation').catch(() => null)) === 'masquee';
   const aide = etat === 'installee' || masquee ? [] : [aideInstallation(etat)];
   return [el('h1', { texte: t('accueil.titre') }), el('p', {}, nouveau), suite, ...aide];
-}
-
-// Nouveau personnage : un nom obligatoire, une profession libre.
-export async function vueNouveau(contexte) {
-  const nom = el('input', { id: 'nom', type: 'text', name: 'nom', autocomplete: 'off', 'aria-describedby': 'nom-erreur' });
-  const erreur = el('p', { classe: 'erreur', id: 'nom-erreur', role: 'alert' });
-  const profession = el('input', { id: 'profession', type: 'text', name: 'profession', autocomplete: 'off' });
-  const formulaire = el('form', { novalidate: '' },
-    el('div', { classe: 'champ' }, el('label', { for: 'nom', texte: t('nouveau.nom') }), nom, erreur),
-    el('div', { classe: 'champ' }, el('label', { for: 'profession', texte: t('nouveau.profession') }), profession),
-    el('div', { classe: 'actions' },
-      el('button', { classe: 'bouton', type: 'submit', test: 'creer', texte: t('nouveau.creer') }),
-      el('a', { classe: 'lien', href: '#/', texte: t('nouveau.annuler') })));
-  formulaire.addEventListener('submit', async (evenement) => {
-    evenement.preventDefault();
-    const nomSaisi = nom.value.trim();
-    if (nomSaisi === '') {
-      erreur.textContent = t('nouveau.nom_requis');
-      nom.setAttribute('aria-invalid', 'true');
-      nom.focus();
-      return;
-    }
-    try {
-      await enregistrerPersonnages([personnageNeuf(nomSaisi, profession.value.trim())]);
-    } catch {
-      erreur.textContent = t('stockage.bloque');
-      return;
-    }
-    contexte.naviguer('#/');
-  });
-  return [el('h1', { texte: t('nouveau.titre') }), formulaire];
-}
-
-// La fiche : le nom, la ligne profession · niveau, le lieu, l'annonce de la feuille, la suppression en deux touchers.
-export async function vueFiche(contexte, id) {
-  const personnage = await lirePersonnage(id).catch(() => null);
-  if (personnage === null) {
-    return [el('h1', { texte: t('fiche.introuvable') }), el('p', {}, lienRetour())];
-  }
-  const supprimer = el('button', { classe: 'bouton bouton-danger', type: 'button', test: 'supprimer', texte: t('fiche.supprimer') });
-  let arme = false;
-  let minuterie = null;
-  supprimer.addEventListener('click', async () => {
-    if (!arme) {
-      arme = true;
-      supprimer.textContent = t('fiche.confirmer');
-      minuterie = setTimeout(() => {
-        arme = false;
-        supprimer.textContent = t('fiche.supprimer');
-      }, DELAI_CONFIRMATION);
-      return;
-    }
-    clearTimeout(minuterie);
-    await supprimerPersonnage(personnage.id).catch(() => {});
-    contexte.naviguer('#/');
-  });
-  return [
-    el('h1', { texte: personnage.nom }),
-    el('p', { classe: 'ligne', texte: ligneProfession(personnage) }),
-    el('p', { classe: 'ligne', texte: lieu(personnage) }),
-    el('p', { test: 'bientot', texte: t('fiche.bientot') }),
-    el('div', { classe: 'actions' }, lienRetour(), supprimer),
-  ];
 }
 
 function liste(nom, test, options, valeur, surChangement) {
@@ -255,7 +180,7 @@ export async function vueReglages(contexte) {
   ];
 }
 
-// Droits et sources : cinq paragraphes.
+// Droits et sources : six paragraphes.
 export async function vueApropos() {
   return [
     el('h1', { texte: t('apropos.titre') }),
@@ -263,6 +188,7 @@ export async function vueApropos() {
       el('p', { texte: t('apropos.outil') }),
       el('p', { texte: t('apropos.oeuvre') }),
       el('p', { texte: t('apropos.sources') }),
+      el('p', { texte: t('apropos.pretires') }),
       el('p', { texte: t('apropos.polices') }),
       el('p', { texte: t('apropos.donnees') })),
   ];

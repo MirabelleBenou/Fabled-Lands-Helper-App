@@ -91,7 +91,9 @@ empreinte: <sha256>
   de `fr.json`. Sans `i18n/fr.json` ni `i18n/en.json` : `i18n: absente`. Une clé utilisée est la valeur d'un attribut
   `data-i18n="…"` dans un `.html`, ou l'argument littéral d'un appel `t('…')` / `t("…")` dans un `.js`, hors de `tests/`.
 - **horsligne** : `externes` = occurrences de `http://` ou `https://` dans les `.html`, `.js`, `.mjs`, `.css`, `.json`,
-  `.webmanifest` hors de `tests/`, commentaires compris, sauf les espaces de noms commençant par `http://www.w3.org/` ;
+  `.webmanifest` hors de `tests/`, commentaires compris, sauf les espaces de noms commençant par `http://www.w3.org/`
+  et, dans `js/liens.js` seulement, les occurrences qui commencent une des valeurs (chaînes) de son export `LIENS`
+  (la même adresse dans un autre fichier compte) ;
   `precache` = longueur de `PRECACHE` (ou `absent`) ; `manquants` = fichiers à couvrir absents de `PRECACHE` (comptés
   aussi quand `PRECACHE` est absent) ; `en_trop` = entrées de `PRECACHE` absentes du dossier.
 - **version** : `code` = `VERSION` ; `changelog` = la version du premier titre `## vX.Y` ou `## vX.Y.Z` de
@@ -217,6 +219,9 @@ l'instrument : il s'affiche `absente`, `absent` ou `aucun` selon les lignes du �
      fichier de sauvegarde, et rend une promesse résolue quand c'est enregistré.
    - **Le hors-ligne** : un service worker (`sw.js` à la racine, enregistré par l'application) qui met en cache `PRECACHE`
      sous `CACHE_NAME`.
+9. **Les liens déclarés** : `js/liens.js` exporte `LIENS`, un objet nom → adresse `https://…` : les adresses que
+   l'utilisateur ouvre d'un toucher, jamais demandées par l'application ; le rituel ne les compte pas, le contrôle
+   d'écran vérifie qu'aucune n'est demandée.
 
 Les fichiers `.js` sont des modules ES (le rituel les contrôle comme tels).
 
