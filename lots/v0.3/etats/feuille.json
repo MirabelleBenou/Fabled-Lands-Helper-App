@@ -1,0 +1,268 @@
+{
+  "format": "fabled-lands-helper",
+  "schema": 2,
+  "exporte_le": "2026-10-24T12:00:00.000Z",
+  "personnages": [
+    {
+      "id": "m-liana",
+      "nom": "Liana la Vive",
+      "profession": "Voyageuse",
+      "niveau": 1,
+      "section_en_cours": {
+        "livre": 1,
+        "section": 192
+      },
+      "cree_le": "2026-10-24T09:00:00.000Z",
+      "modifie_le": "2026-10-24T11:00:00.000Z",
+      "endurance": {
+        "max": 9,
+        "actuelle": 6
+      },
+      "competences": {
+        "charisme": {
+          "initiale": 2,
+          "actuelle": 2,
+          "bonus": [
+            {
+              "valeur": -1,
+              "raison": "Cicatrice au visage"
+            }
+          ]
+        },
+        "combat": {
+          "initiale": 5,
+          "actuelle": 5,
+          "bonus": [
+            {
+              "valeur": 1,
+              "raison": "Lance de qualité"
+            }
+          ]
+        },
+        "magie": {
+          "initiale": 2,
+          "actuelle": 2,
+          "bonus": []
+        },
+        "piete": {
+          "initiale": 3,
+          "actuelle": 3,
+          "bonus": []
+        },
+        "exploration": {
+          "initiale": 6,
+          "actuelle": 6,
+          "bonus": []
+        },
+        "adresse": {
+          "initiale": 4,
+          "actuelle": 4,
+          "bonus": []
+        }
+      },
+      "defense": {
+        "bonus": [
+          {
+            "valeur": 1,
+            "raison": "Gilet en cuir"
+          }
+        ]
+      },
+      "bourse": 41,
+      "possessions": [
+        "Lance de qualité",
+        "Gilet en cuir",
+        "Corde",
+        "Lanterne",
+        "Paquet de vivres"
+      ],
+      "titres": [
+        "Ami des Rangers de Sokara"
+      ],
+      "benedictions": [
+        {
+          "origine": "Alvir et Valmir",
+          "consequences": "Relancer un jet d'Exploration raté, une fois."
+        }
+      ],
+      "maledictions": [],
+      "resurrections": [],
+      "histoire": "Partie de Sokar pour retrouver son frère.",
+      "pretire": "liana"
+    },
+    {
+      "id": "m-tjell",
+      "nom": "Tjell Lao-Me",
+      "profession": "Troubadour / Danseuse",
+      "niveau": 2,
+      "section_en_cours": {
+        "livre": 1,
+        "section": 1
+      },
+      "cree_le": "2026-10-24T09:30:00.000Z",
+      "modifie_le": "2026-10-24T09:30:00.000Z",
+      "endurance": {
+        "max": 9,
+        "actuelle": 9
+      },
+      "competences": {
+        "charisme": {
+          "initiale": 6,
+          "actuelle": 6,
+          "bonus": []
+        },
+        "combat": {
+          "initiale": 4,
+          "actuelle": 4,
+          "bonus": []
+        },
+        "magie": {
+          "initiale": 4,
+          "actuelle": 4,
+          "bonus": []
+        },
+        "piete": {
+          "initiale": 1,
+          "actuelle": 1,
+          "bonus": []
+        },
+        "exploration": {
+          "initiale": 2,
+          "actuelle": 2,
+          "bonus": [
+            {
+              "valeur": 1,
+              "raison": "Boussole"
+            }
+          ]
+        },
+        "adresse": {
+          "initiale": 5,
+          "actuelle": 5,
+          "bonus": []
+        }
+      },
+      "defense": {
+        "bonus": [
+          {
+            "valeur": 1,
+            "raison": "Gilet en cuir"
+          },
+          {
+            "valeur": -1,
+            "raison": "Fiche de l'éditeur"
+          }
+        ]
+      },
+      "bourse": 16,
+      "possessions": [
+        "Bâton de combat",
+        "Boussole",
+        "Gilet en cuir"
+      ],
+      "titres": [],
+      "benedictions": [],
+      "maledictions": [],
+      "resurrections": [],
+      "histoire": "",
+      "pretire": "tjell"
+    },
+    {
+      "id": "m-ysolde",
+      "nom": "Ysolde des Marches",
+      "profession": "Guerrière",
+      "niveau": 3,
+      "section_en_cours": {
+        "livre": 1,
+        "section": 437
+      },
+      "cree_le": "2026-10-24T08:00:00.000Z",
+      "modifie_le": "2026-10-24T08:30:00.000Z",
+      "endurance": {
+        "max": 14,
+        "actuelle": 11
+      },
+      "competences": {
+        "charisme": {
+          "initiale": 3,
+          "actuelle": 3,
+          "bonus": []
+        },
+        "combat": {
+          "initiale": 7,
+          "actuelle": 7,
+          "bonus": [
+            {
+              "valeur": 2,
+              "raison": "Épée de Marlock"
+            }
+          ]
+        },
+        "magie": {
+          "initiale": 1,
+          "actuelle": 1,
+          "bonus": []
+        },
+        "piete": {
+          "initiale": 4,
+          "actuelle": 4,
+          "bonus": []
+        },
+        "exploration": {
+          "initiale": 3,
+          "actuelle": 3,
+          "bonus": []
+        },
+        "adresse": {
+          "initiale": 2,
+          "actuelle": 2,
+          "bonus": []
+        }
+      },
+      "defense": {
+        "bonus": [
+          {
+            "valeur": 3,
+            "raison": "Cotte de mailles"
+          }
+        ]
+      },
+      "bourse": 230,
+      "possessions": [
+        "Épée de Marlock",
+        "Cotte de mailles",
+        "Corde",
+        "Lanterne",
+        "Paquet de vivres",
+        "Fiole de soin",
+        "Carte de Sokara",
+        "Grappin",
+        "Couverture",
+        "Silex",
+        "Gourde",
+        "Talisman"
+      ],
+      "titres": [
+        "Protectrice de Marlock",
+        "Chevalier de Sokara"
+      ],
+      "benedictions": [],
+      "maledictions": [
+        {
+          "origine": "Marais de Mire",
+          "consequences": "Fièvre des marais : Combat −1 jusqu'à guérison."
+        }
+      ],
+      "resurrections": [
+        {
+          "origine": "Temple de Nagil",
+          "lieu": "Marlock",
+          "livre": 1,
+          "section": 100
+        }
+      ],
+      "histoire": "",
+      "pretire": null
+    }
+  ]
+}

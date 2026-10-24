@@ -1,0 +1,382 @@
+/* Lot v0.1 — « Carnet de route » : jetons Jour / Chandelle, polices embarquées, page, cadre à la plume. */
+
+@font-face {
+  font-family: "IM Fell English SC";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/im-fell-english-sc-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Alegreya";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/alegreya-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Alegreya";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/alegreya-latin-400-italic.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Alegreya";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/alegreya-latin-700-normal.woff2") format("woff2");
+}
+
+/* Les couleurs : Jour par défaut, Chandelle redéfinie en bloc. Aucun composant ne porte de couleur littérale. */
+:root {
+  --fond: #d9cba8;
+  --page: #ece0c4;
+  --encre: #3a2918;
+  --encre-douce: #6f5a40;
+  --filet: #5b4329;
+  --accent: #2f6b5e;
+  --accent-encre: #f3ead6;
+  --succes: #2f6b5e;
+  --echec: #8f2f22;
+  --halo: transparent;
+  --ombre: rgba(0, 0, 0, .45);
+  --police-titre: "IM Fell English SC", "Iowan Old Style", Georgia, serif;
+  --police-texte: "Alegreya", "Iowan Old Style", Georgia, serif;
+  color-scheme: light;
+}
+[data-theme="chandelle"] {
+  --fond: #120d09;
+  --page: #241b13;
+  --encre: #ead9b6;
+  --encre-douce: #b29d76;
+  --filet: #a88a5c;
+  --accent: #e0a944;
+  --accent-encre: #1c140d;
+  --succes: #9fd0bd;
+  --echec: #ef8f78;
+  --halo: rgba(224, 169, 68, .10);
+  --ombre: rgba(0, 0, 0, .45);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html {
+  background: var(--fond);
+  color: var(--encre);
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  padding: 24px max(16px, env(safe-area-inset-right)) 48px max(16px, env(safe-area-inset-left));
+  background: var(--fond);
+  font: 400 17px/1.45 var(--police-texte);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.filtres { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* La page : tout le contenu est posé dessus, jamais directement sur le fond. */
+.page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: clamp(18px, 4vw, 40px);
+  background: var(--page);
+  border-radius: 3px;
+  box-shadow: 0 18px 40px -18px var(--ombre), 0 0 120px var(--halo) inset;
+}
+
+/* L'en-tête et les onglets. */
+.entete { margin-bottom: 24px; border-bottom: 1px solid var(--filet); }
+.marque { margin: 0 0 4px; font: 400 24px/1.2 var(--police-titre); }
+.onglets { display: flex; flex-wrap: wrap; gap: 0 22px; }
+.onglets a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font: 400 18px/1 var(--police-titre);
+  letter-spacing: .02em;
+  color: var(--encre-douce);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+.onglets a[aria-current="page"] { color: var(--encre); border-bottom-color: var(--accent); }
+
+/* Titres et textes. */
+h1 {
+  margin: 0 0 20px;
+  font: 400 clamp(30px, 6vw, 44px)/1.1 var(--police-titre);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+h2 { margin: 0 0 12px; font: 400 24px/1.2 var(--police-titre); }
+p { margin: 0 0 14px; overflow-wrap: anywhere; }
+.legende { font-size: 15px; color: var(--encre-douce); }
+.ligne { display: block; color: var(--encre-douce); }
+.vide { margin-top: 20px; }
+
+/* Les boutons, les liens, les champs : toute cible touchable fait 44 px de haut au moins. */
+.bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 6px 22px;
+  font: 400 19px/1.2 var(--police-titre);
+  letter-spacing: .04em;
+  color: var(--accent-encre);
+  background: var(--accent);
+  border: 2px solid var(--accent);
+  border-radius: 3px;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+  appearance: none;
+}
+.bouton-danger { color: var(--echec); background: transparent; border-color: var(--echec); }
+.lien {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--accent);
+  text-decoration: underline;
+}
+/* Lot v0.2 — le bouton à l'allure d'un lien : celle de a.lien (le reste vient de .lien). */
+button.lien {
+  padding: 0;
+  font: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  appearance: none;
+}
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin-bottom: 14px; }
+.champ { margin: 0 0 20px; }
+.champ label { display: block; margin-bottom: 6px; font-weight: 700; }
+input[type="text"], select {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  font: 400 17px/1.3 var(--police-texte);
+  color: var(--encre);
+  background: var(--page);
+  border: 1px solid var(--filet);
+  border-radius: 3px;
+}
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.erreur { margin: 6px 0 0; color: var(--echec); }
+.erreur:empty { display: none; }
+.message { margin: 0 0 14px; }
+.message:empty { display: none; }
+.message.succes { color: var(--succes); }
+.message.echec { color: var(--echec); }
+
+/* Le cadre à la plume : la bordure est portée par un pseudo-élément déformé ; le texte n'est jamais filtré. */
+.cadre { position: relative; padding: 16px 20px; }
+.cadre::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--filet);
+  border-radius: 3px;
+  filter: url(#plume);
+  pointer-events: none;
+}
+.liste { display: grid; gap: 16px; margin: 20px 0 0; padding: 0; list-style: none; }
+.carte { display: block; color: inherit; text-decoration: none; }
+.nom { display: block; font-weight: 700; font-size: 19px; overflow-wrap: anywhere; }
+.sauvegarde { margin: 24px 0; }
+
+/* Lot v0.2 — l'aide « Installer l'application » et le bandeau « nouvelle version prête ». */
+.aide-installation { margin-top: 24px; }
+.bandeau {
+  position: fixed;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  left: max(16px, env(safe-area-inset-left, 0px));
+  right: max(16px, env(safe-area-inset-right, 0px));
+  max-width: 828px;
+  margin-inline: auto;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px 16px;
+  color: var(--encre);
+  background: var(--page);
+  border: 2px solid var(--filet);
+  border-radius: 3px;
+  box-shadow: 0 8px 24px -8px var(--ombre);
+}
+.bandeau p { margin: 0; }
+.bandeau[hidden] { display: none; }
+
+/* Lot v0.3 — la feuille d'aventure : création, sous-onglets, rubriques, compteurs, lignes de compétence,
+   possessions, cultes. */
+input[type="number"], textarea {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  font: 400 17px/1.3 var(--police-texte);
+  color: var(--encre);
+  background: var(--page);
+  border: 1px solid var(--filet);
+  border-radius: 3px;
+}
+input, select, textarea { font-variant-numeric: tabular-nums lining-nums; }
+textarea { resize: vertical; line-height: 1.45; }
+textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input:disabled, .bouton:disabled { opacity: .5; cursor: default; }
+.bouton-second { color: var(--accent); background: transparent; }
+
+/* Les sous-onglets (création, rubriques de la feuille). */
+.sous-onglets { display: flex; flex-wrap: wrap; gap: 0 22px; margin: 4px 0 24px; border-bottom: 1px solid var(--filet); }
+.sous-onglets a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-bottom: -1px;
+  font: 400 19px/1 var(--police-titre);
+  letter-spacing: .03em;
+  color: var(--encre-douce);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+.sous-onglets a[aria-current="page"] { color: var(--encre); border-bottom-color: var(--accent); }
+
+/* Le titre de rubrique, suivi de son filet ; le petit titre d'un cadre. */
+.rubrique { display: flex; align-items: baseline; gap: 12px; margin: 28px 0 12px; }
+.rubrique::after { content: ""; flex: 1; height: 1px; background: var(--filet); opacity: .55; }
+.rubrique .compte { font: 400 17px/1 var(--police-texte); color: var(--encre-douce); }
+.petit-titre { margin: 0 0 8px; font: 400 18px/1.2 var(--police-titre); letter-spacing: .04em; color: var(--encre-douce); }
+.bloc { margin-top: 8px; }
+
+/* Les compteurs : − valeur +, les gros chiffres, la jauge d'Endurance. */
+.compteur { display: flex; align-items: center; gap: 14px; }
+.rond {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font: 400 26px/1 var(--police-texte);
+  color: var(--accent);
+  background: transparent;
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.rond:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.gros { min-width: 1.4em; font: 400 44px/1 var(--police-titre); text-align: center; }
+.moyen { min-width: 1.4em; font: 400 32px/1 var(--police-titre); text-align: center; }
+.sur { font-size: 24px; color: var(--encre-douce); }
+.jauge { height: 8px; margin-top: 12px; border: 1px solid var(--filet); border-radius: 999px; overflow: hidden; }
+.jauge span { display: block; height: 100%; background: var(--accent); }
+.endurance p.legende { margin: 10px 0 0; }
+.editeur-stats { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px 40px; margin-top: 16px; }
+.groupe-edition .petit-titre { margin: 0 0 8px; }
+
+/* Les lignes de compétence et la Défense : nom, base et puces, total ; dépliées, leur éditeur. */
+.stats { margin: 0; padding: 0; list-style: none; }
+.ligne-stat { border-bottom: 1px dashed var(--filet); }
+.entete-stat {
+  display: grid;
+  grid-template-columns: 8.5em 1fr 2.2em;
+  align-items: center;
+  gap: 4px 12px;
+  min-height: 60px;
+  padding: 6px 2px;
+  color: inherit;
+  text-decoration: none;
+}
+.nom-stat { font: 400 22px/1.15 var(--police-titre); letter-spacing: .02em; }
+.detail-stat { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.formule { font-size: 15px; font-style: italic; color: var(--encre-douce); }
+.total { font: 400 36px/1 var(--police-titre); text-align: right; }
+.ligne-stat.ouverte .total { color: var(--accent); }
+@media (max-width: 520px) {
+  .entete-stat { grid-template-columns: 6.6em 1fr 1.8em; }
+  .nom-stat { font-size: 20px; }
+  .total { font-size: 32px; }
+}
+.puce {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 10px;
+  font-size: 15px;
+  font-style: italic;
+  border: 1px solid var(--filet);
+  border-radius: 999px;
+}
+.puce.malus { color: var(--echec); border-color: var(--echec); }
+.puces { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; padding: 0; list-style: none; }
+.puces .puce { min-height: 44px; padding: 0 0 0 14px; font-size: 17px; }
+.retirer { width: 44px; height: 44px; font-size: 20px; color: var(--encre-douce); background: none; border: 0; cursor: pointer; }
+.retirer:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.ligne-stat .editeur { margin: 0 0 14px; padding: 4px 0 4px 16px; border-left: 2px solid var(--accent); }
+.base-edition { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin-bottom: 12px; }
+.base-edition .petit-titre { margin: 0; }
+.bonus-liste { margin: 0 0 8px; padding: 0; list-style: none; }
+.bonus-liste li { display: flex; align-items: center; gap: 12px; min-height: 44px; }
+.valeur { width: 2.2em; font: 400 22px/1 var(--police-titre); }
+.valeur.malus { color: var(--echec); }
+.raison { flex: 1; font-style: italic; }
+.ajout-bonus { display: grid; grid-template-columns: 5em 1fr auto; gap: 8px; margin: 4px 0 6px; }
+
+/* Une saisie et son bouton « Ajouter » ; la Bourse. */
+.ajout { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin: 4px 0 14px; }
+.bourse .ajout { grid-template-columns: 1fr auto auto; margin: 16px 0 0; }
+@media (max-width: 520px) {
+  .bourse .ajout { grid-template-columns: 1fr 1fr; }
+  .bourse .ajout input { grid-column: 1 / -1; }
+}
+
+/* Les possessions transportées, numérotées. */
+.possessions { margin: 0 0 8px; padding: 0; list-style: none; counter-reset: objet; }
+.possessions li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  counter-increment: objet;
+  border-bottom: 1px dashed var(--filet);
+}
+.possessions li::before { content: counter(objet) "."; width: 1.6em; text-align: right; color: var(--encre-douce); }
+.objet { flex: 1; padding: 10px 0; overflow-wrap: anywhere; }
+
+/* Les cultes : une entrée par cadre, le formulaire replié sous « Ajouter ». */
+.entrees { display: grid; gap: 12px; margin: 0 0 8px; padding: 0; list-style: none; }
+.entree p { margin: 0 0 4px; }
+.ajout-entree summary { list-style: none; cursor: pointer; }
+.ajout-entree summary::-webkit-details-marker { display: none; }
+.ajout-entree summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.champs-entree { display: grid; gap: 8px; margin: 8px 0 14px; }
+.champs-entree .bouton { justify-self: start; }
+
+/* La création : les fiches pré-tirées, la saisie libre. */
+.source-pretires { margin: 0; }
+.pretires {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
+  margin: 16px 0 24px;
+  padding: 0;
+  list-style: none;
+}
+.pretire { display: flex; flex-direction: column; gap: 4px; height: 100%; color: inherit; text-decoration: none; }
+.pretire[aria-current="true"]::before { border-color: var(--accent); border-width: 3px; }
+.pretire[aria-current="true"] .nom { color: var(--accent); }
+.mini { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 15px; color: var(--encre-douce); }
+.mini abbr { text-decoration: none; font-variant: small-caps; }
+.pretire .puce { align-self: flex-start; margin-top: 6px; }
+.grille-nombres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 14px; }
+@media (max-width: 520px) { .grille-nombres { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.pied-fiche { margin-top: 36px; justify-content: space-between; }
