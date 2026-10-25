@@ -143,5 +143,15 @@
   "feuille.objet_modifier": "L'objet",
   "feuille.objet_bonus": "Bonus",
   "feuille.sans_bonus": "Sans bonus",
-  "feuille.enregistrer": "Enregistrer"
+  "feuille.enregistrer": "Enregistrer",
+  "des.un": "1 dé",
+  "des.deux": "2 dés",
+  "des.lancer_un": "Lancer un dé",
+  "des.lancer_deux": "Lancer deux dés",
+  "des.dernier": "Dernier jet : {jet}",
+  "des.titre": "Les dés",
+  "des.relancer": "Relancer",
+  "des.ranger": "Ranger",
+  "des.relancer_aria": "Relancer les dés",
+  "des.resultat": "Résultat : {jet}"
 }

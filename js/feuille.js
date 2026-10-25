@@ -3,6 +3,8 @@
 // nouveau depuis le personnage enregistré. Le texte saisi ou importé n'entre jamais comme HTML.
 // Lot v0.4 — le bonus des objets : la pastille et l'éditeur du bonus de chaque possession, l'ajout avec un bonus ;
 // dans les Statistiques, les pastilles et la liste des bonus d'objets.
+// Lot v0.5 — les dés : la barre des dés termine la fiche (js/des.js).
+import { barreDes } from './des.js';
 import { t } from './i18n.js';
 import { LIENS } from './liens.js';
 import { PRETIRES, personnagePretire, pretireParId } from './pretires.js';
@@ -629,5 +631,6 @@ export async function vueFiche(contexte, route) {
     const deplie = DEPLIABLES.includes(route.deplie) ? route.deplie : null;
     contenu = rubriqueStatistiques(contexte, p, `${racine}/statistiques`, deplie);
   }
-  return [el('h1', { test: 'nom', texte: p.nom }), ligne, onglets, ...contenu];
+  return [el('h1', { test: 'nom', texte: p.nom }), ligne, onglets, ...contenu,
+    el('div', { classe: 'marge-des', 'aria-hidden': 'true' }), await barreDes()];
 }

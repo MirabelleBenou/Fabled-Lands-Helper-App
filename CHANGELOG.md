@@ -3,6 +3,18 @@
 *Une entrée par version, la plus récente en tête ; sous chaque entrée, les fichiers touchés, en sous-puces à deux
 espaces de retrait.*
 
+## v0.5 — 2026-10-25
+
+- Les dés : sur la fiche, un bouton en forme de dé ouvre le choix « 1 dé » ou « 2 dés ». Les dés, en cubes, sont lancés depuis le bas de l'écran, roulent sur la page en rebondissant et s'arrêtent d'eux-mêmes sur la face tirée ; ils restent posés avec leur total, et le dernier jet reste écrit au-dessus du bouton. L'application ne calcule rien : le joueur lit le résultat et le reporte lui-même.
+  - `js/des.js` : neuf, le tirage (`tirageNavigateur`), `lancer`, `somme`, `texteJet`, `points`, la barre de la fiche (`barreDes`), la couche où les dés roulent et le dernier jet
+  - `js/feuille.js` : la barre des dés à la fin de la fiche (`vueFiche`)
+  - `js/precache.js` : `js/des.js` dans le cache hors ligne (27 entrées)
+  - `css/app.css` : la feuille de style du lot
+  - `js/version.js` : `v0.5` (le cache hors ligne devient `flh-v0.5`)
+  - `i18n/fr.json`, `i18n/en.json` : 10 clés neuves (155 clés)
+  - `tests/des.test.js` : neuf, 10 tests
+  - `CHANGELOG.md` : cette entrée
+
 ## v0.4 — 2026-10-25
 
 - Le bonus des objets : une possession peut porter un bonus (ou un malus) à une compétence ou à la Défense, qui entre seul dans le total ; pour chaque compétence et pour la Défense, seul le meilleur bonus d'objet compte, un malus d'objet compte toujours. Les bonus saisis à la main au nom d'un objet transporté passent sur cet objet (sauvegarde au schéma 3).

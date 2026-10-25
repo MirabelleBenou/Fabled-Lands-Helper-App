@@ -143,5 +143,15 @@
   "feuille.objet_modifier": "The item",
   "feuille.objet_bonus": "Bonus",
   "feuille.sans_bonus": "No bonus",
-  "feuille.enregistrer": "Save"
+  "feuille.enregistrer": "Save",
+  "des.un": "1 die",
+  "des.deux": "2 dice",
+  "des.lancer_un": "Roll one die",
+  "des.lancer_deux": "Roll two dice",
+  "des.dernier": "Last roll: {jet}",
+  "des.titre": "The dice",
+  "des.relancer": "Roll again",
+  "des.ranger": "Put away",
+  "des.relancer_aria": "Roll the dice again",
+  "des.resultat": "Result: {jet}"
 }

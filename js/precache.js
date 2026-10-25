@@ -18,6 +18,7 @@ export const PRECACHE = [
   'icons/icon.svg',
   'index.html',
   'js/app.js',
+  'js/des.js',
   'js/feuille.js',
   'js/i18n.js',
   'js/liens.js',

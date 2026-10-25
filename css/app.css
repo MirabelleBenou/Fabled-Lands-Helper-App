@@ -42,6 +42,8 @@
   --echec: #8f2f22;
   --halo: transparent;
   --ombre: rgba(0, 0, 0, .45);
+  --de: #f2e8d2;
+  --de-point: #3a2918;
   --police-titre: "IM Fell English SC", "Iowan Old Style", Georgia, serif;
   --police-texte: "Alegreya", "Iowan Old Style", Georgia, serif;
   color-scheme: light;
@@ -58,6 +60,8 @@
   --echec: #ef8f78;
   --halo: rgba(224, 169, 68, .10);
   --ombre: rgba(0, 0, 0, .45);
+  --de: #e6d6b2;
+  --de-point: #2a1d12;
   color-scheme: dark;
 }
 
@@ -395,3 +399,135 @@ input:disabled, .bouton:disabled { opacity: .5; cursor: default; }
 .grille-nombres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 14px; }
 @media (max-width: 520px) { .grille-nombres { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .pied-fiche { margin-top: 36px; justify-content: space-between; }
+
+/* Lot v0.5 — les dés : la barre flottante de la fiche, la couche où ils roulent, le cartouche du résultat. */
+.marge-des { height: 132px; }
+.barre-des {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.des-ligne { display: flex; align-items: center; gap: 10px; }
+.des-menu { display: flex; gap: 8px; }
+.des-menu .bouton { min-height: 48px; padding: 6px 16px; }
+.bouton-de {
+  width: 56px;
+  height: 56px;
+  padding: 9px;
+  display: block;
+  background: var(--de);
+  border: 1.5px solid var(--filet);
+  border-radius: 12px;
+  box-shadow: 0 4px 10px -4px var(--ombre);
+  transform: rotate(-8deg);
+  cursor: pointer;
+}
+.face-bouton { display: grid; width: 100%; height: 100%; grid-template: repeat(3, minmax(0, 1fr)) / repeat(3, minmax(0, 1fr)); place-items: center; font-size: 0; line-height: 0; }
+.bouton-de .point { width: 8px; height: 8px; border-radius: 50%; background: var(--de-point); }
+.bouton-de[aria-expanded="true"] { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 2px; }
+.bouton-de:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.des-dernier {
+  margin: 0;
+  padding: 4px 12px;
+  font-style: italic;
+  font-size: 15px;
+  color: var(--encre);
+  background: var(--page);
+  border: 1px solid var(--filet);
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.des-couche {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  background: color-mix(in srgb, var(--fond) 55%, transparent);
+  overflow: hidden;
+}
+.des-plateau {
+  --taille-de: clamp(68px, 12vw, 104px);
+  position: relative;
+  display: block;
+  width: calc(var(--taille-de) * 3.6);
+  height: calc(var(--taille-de) * 1.7);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.des-plateau:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; border-radius: 3px; }
+.de {
+  position: absolute;
+  left: calc(50% - var(--taille-de) / 2);
+  top: calc(50% - var(--taille-de) / 2);
+  width: var(--taille-de);
+  height: var(--taille-de);
+  transform-style: preserve-3d;
+  transform: translate3d(0, 0, 0) perspective(1600px) rotateZ(0deg) rotateX(22deg) rotateX(0deg) rotateY(0deg);
+}
+.face, .noyau {
+  position: absolute;
+  inset: 0;
+  background: var(--de);
+}
+.face {
+  padding: calc(var(--taille-de) * .15);
+  display: grid;
+  grid-template: repeat(3, minmax(0, 1fr)) / repeat(3, minmax(0, 1fr));
+  place-items: center;
+  font-size: 0;
+  line-height: 0;
+  border-radius: calc(var(--taille-de) * .03);
+  box-shadow: inset 0 0 calc(var(--taille-de) * .05) color-mix(in srgb, var(--de-point) 12%, transparent);
+  backface-visibility: hidden;
+}
+.face-avant { transform: translateZ(calc(var(--taille-de) / 2)); }
+.face-arriere { transform: rotateY(180deg) translateZ(calc(var(--taille-de) / 2)); }
+.face-droite { transform: rotateY(90deg) translateZ(calc(var(--taille-de) / 2)); }
+.face-gauche { transform: rotateY(-90deg) translateZ(calc(var(--taille-de) / 2)); }
+.face-haut { transform: rotateX(90deg) translateZ(calc(var(--taille-de) / 2)); }
+.face-bas { transform: rotateX(-90deg) translateZ(calc(var(--taille-de) / 2)); }
+.noyau { inset: 1%; background: var(--de); }
+.noyau-x { transform: rotateX(90deg); }
+.noyau-y { transform: rotateY(90deg); }
+.face .point { width: calc(var(--taille-de) * .16); height: calc(var(--taille-de) * .16); border-radius: 50%; background: var(--de-point); }
+.ombre-de {
+  position: absolute;
+  left: calc(50% - var(--taille-de) * .55);
+  top: calc(50% - var(--taille-de) * .14);
+  width: calc(var(--taille-de) * 1.1);
+  height: calc(var(--taille-de) * .28);
+  border-radius: 50%;
+  background: var(--ombre);
+  filter: blur(calc(var(--taille-de) * .08));
+  opacity: 0;
+}
+.des-cartouche {
+  min-width: 200px;
+  padding: 8px 22px 2px;
+  text-align: center;
+  background: var(--page);
+  border: 1px solid var(--filet);
+  border-radius: 3px;
+  visibility: hidden;
+}
+.des-cartouche.pose { visibility: visible; }
+.des-resultat {
+  margin: 0;
+  font: 700 44px/1.1 var(--police-texte);
+  color: var(--encre);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.des-detail { margin: 0; font-size: 17px; font-style: italic; color: var(--encre-douce); font-variant-numeric: tabular-nums lining-nums; }
+.des-actions { margin: 0; display: flex; justify-content: center; gap: 24px; }
+.des-actions .lien { background: none; border: 0; padding: 0 4px; font: inherit; font-size: 17px; cursor: pointer; }
