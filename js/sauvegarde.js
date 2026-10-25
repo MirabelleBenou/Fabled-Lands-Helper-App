@@ -89,6 +89,7 @@ function rattacher(personnage) {
     }
   }
 }
+
 const texteOuVide = (valeur) => (typeof valeur === 'string' ? valeur : '');
 const entierOuNul = (valeur) => (Number.isInteger(valeur) ? valeur : null);
 
