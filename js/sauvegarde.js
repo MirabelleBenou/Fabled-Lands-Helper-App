@@ -4,10 +4,11 @@
 // et la migration depuis le schéma 1.
 // Lot v0.4 — le schéma 3 : une possession devient un objet { texte, bonus } ; les bonus saisis à la main au nom
 // d'un objet transporté passent sur cet objet (le rattachement, depuis le schéma 1 ou 2 seulement).
-import { CIBLES, COMPETENCES } from './regles.js';
+// Lot v0.6 — le schéma 4 : le journal, quatre listes de plus (historique, quêtes, notes, combats), et leur complétion.
+import { CIBLES, COMPETENCES, MAX_HISTORIQUE } from './regles.js';
 
 export const FORMAT = 'fabled-lands-helper';
-export const SCHEMA = 3;
+export const SCHEMA = 4;
 
 const EPOQUE_ZERO = '1970-01-01T00:00:00.000Z';
 
@@ -106,8 +107,43 @@ const completerResurrection = (e) => ({
   section: entierOuNul(e.section),
 });
 
+// Lot v0.6 — le journal. Une section du chemin ou d'une quête : un objet aux deux entiers ≥ 1 (livre, section).
+const estLivreEtSection = (valeur) => estObjet(valeur) && Number.isInteger(valeur.livre) && valeur.livre >= 1
+  && Number.isInteger(valeur.section) && valeur.section >= 1;
+const booleenOuFaux = (valeur) => (typeof valeur === 'boolean' ? valeur : false);
+
+// Lot v0.6 — chaque liste absente ou qui n'est pas un tableau devient [] ; une entrée gardée garde ses champs inconnus.
+const garder = (valeur, garde) => (Array.isArray(valeur) ? valeur.filter(garde) : []);
+
+// L'historique : les entrées invalides retirées, puis seules les MAX_HISTORIQUE dernières restent.
+const completerHistorique = (valeur) => garder(valeur, estLivreEtSection).slice(-MAX_HISTORIQUE);
+
+const completerQuete = (e) => ({
+  ...e,
+  personnages: texteOuVide(e.personnages),
+  sections: garder(e.sections, estLivreEtSection),
+  terminee: booleenOuFaux(e.terminee),
+});
+
+const completerNote = (e, reference) => ({
+  ...e,
+  livre: entierOuNul(e.livre),
+  section: entierOuNul(e.section),
+  ecrite_le: typeof e.ecrite_le === 'string' ? e.ecrite_le : reference,
+});
+
+const completerCombat = (e) => ({
+  ...e,
+  combat: estPositif(e.combat) ? e.combat : 0,
+  defense: estPositif(e.defense) ? e.defense : 0,
+  endurance: completerEndurance(e.endurance),
+  livre: entierOuNul(e.livre),
+  section: entierOuNul(e.section),
+  termine: booleenOuFaux(e.termine),
+});
+
 // Un personnage lu (d'un fichier importé ou du stockage) : complété des valeurs par défaut manquantes, au schéma 3
-// (lot v0.4), ses champs inconnus conservés tels quels ; une copie qui ne partage rien avec `brut`. Lève une
+// (lot v0.4), puis au schéma 4 (lot v0.6), ses champs inconnus conservés tels quels ; une copie qui ne partage rien avec `brut`. Lève une
 // exception si le personnage n'a pas d'id ou pas de nom.
 export function completerPersonnage(brut, reference = EPOQUE_ZERO) {
   if (!estObjet(brut) || !estChaineNonVide(brut.id) || !estChaineNonVide(brut.nom)) {
@@ -135,10 +171,15 @@ export function completerPersonnage(brut, reference = EPOQUE_ZERO) {
   personnage.resurrections = completerEntrees(personnage.resurrections, completerResurrection);
   personnage.histoire = texteOuVide(personnage.histoire);
   if (!estChaineNonVide(personnage.pretire)) personnage.pretire = null;
+  // Lot v0.6 — le journal.
+  personnage.historique = completerHistorique(personnage.historique);
+  personnage.quetes = garder(personnage.quetes, (e) => estObjet(e) && estChaineNonVide(e.titre)).map(completerQuete);
+  personnage.notes = garder(personnage.notes, (e) => estObjet(e) && estChaineNonVide(e.texte)).map((e) => completerNote(e, reference));
+  personnage.combats = garder(personnage.combats, (e) => estObjet(e) && estChaineNonVide(e.nom)).map(completerCombat);
   return personnage;
 }
 
-// Rend { schema: SCHEMA, personnages } à partir de l'objet JSON d'un fichier exporté (schéma 1, 2 ou 3),
+// Rend { schema: SCHEMA, personnages } à partir de l'objet JSON d'un fichier exporté (schéma 1, 2, 3 ou 4),
 // ou lève une exception si le fichier est illisible (code « SCHEMA_RECENT » s'il vient d'un schéma plus récent).
 export function lire(objet) {
   if (!estObjet(objet)) throw new Error('sauvegarde illisible');
@@ -166,7 +207,8 @@ export function nomFichierExport(maintenant = new Date()) {
   return `fabled-lands-helper-${jour}.flh.json`;
 }
 
-// Un personnage neuf : niveau 1, livre 1 section 1 ; lot v0.3 — sa feuille aux valeurs neutres du schéma 2.
+// Un personnage neuf : niveau 1, livre 1 section 1 ; lot v0.3 — sa feuille aux valeurs neutres du schéma 2 ;
+// lot v0.6 — les quatre listes du journal, vides.
 export function personnageNeuf(nom, profession, maintenant = new Date(), id = crypto.randomUUID()) {
   const iso = maintenant.toISOString();
   return {
@@ -188,5 +230,9 @@ export function personnageNeuf(nom, profession, maintenant = new Date(), id = cr
     resurrections: [],
     histoire: '',
     pretire: null,
+    historique: [],
+    quetes: [],
+    notes: [],
+    combats: [],
   };
 }

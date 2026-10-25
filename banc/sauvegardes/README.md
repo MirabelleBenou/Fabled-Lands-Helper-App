@@ -1,1 +1,1 @@
-Sauvegardes de référence : des fichiers *.json relus par lire() à chaque rituel. v0.1-exemple.json est au schéma 1, v0.3-exemple.json au schéma 2, v0.4-exemple.json au schéma 3. Ne jamais y mettre de sauvegarde réelle.
+Sauvegardes de référence : des fichiers *.json relus par lire() à chaque rituel. v0.1-exemple.json est au schéma 1, v0.3-exemple.json au schéma 2, v0.4-exemple.json au schéma 3, v0.6-exemple.json au schéma 4. Ne jamais y mettre de sauvegarde réelle.

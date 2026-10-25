@@ -4,6 +4,8 @@
 // Lot v0.4 — le bonus des objets : la pastille et l'éditeur du bonus de chaque possession, l'ajout avec un bonus ;
 // dans les Statistiques, les pastilles et la liste des bonus d'objets.
 // Lot v0.5 — les dés : la barre des dés termine la fiche (js/des.js).
+// Lot v0.6 — le journal : deux rubriques de plus, Aventure (la section en cours et le chemin parcouru, les quêtes, les
+// notes) et Combats (le personnage, ses adversaires, les combats passés). L'écran ne calcule rien.
 import { barreDes } from './des.js';
 import { t } from './i18n.js';
 import { LIENS } from './liens.js';
@@ -12,22 +14,33 @@ import {
   CIBLES,
   COMPETENCES,
   MAX_POSSESSIONS,
+  ajouterAdversaire,
   ajouterBonus,
   ajouterEntree,
+  ajouterNote,
   ajouterPossession,
+  ajouterQuete,
+  ajouterSectionQuete,
   ajouterTitre,
+  allerSection,
   bonusObjets,
   changerBase,
   changerBonusObjet,
   changerBourse,
   changerEndurance,
+  changerEnduranceAdversaire,
   changerEnduranceMax,
   changerNiveau,
   defense,
+  entierSaisi,
   feuilleLibre,
+  finirCombat,
+  modifierAdversaire,
+  modifierQuete,
   operationBourse,
   retirerBonus,
   retirerDeListe,
+  retirerSectionQuete,
   signe,
   totalCompetence,
 } from './regles.js';
@@ -59,6 +72,9 @@ const RUBRIQUES = [
   ['statistiques', () => t('feuille.statistiques')],
   ['possessions', () => t('feuille.possessions')],
   ['cultes', () => t('feuille.cultes')],
+  // Lot v0.6 — le journal.
+  ['aventure', () => t('feuille.aventure')],
+  ['combats', () => t('feuille.combats')],
 ];
 const DEPLIABLES = [...COMPETENCES, 'defense', 'endurance'];
 // Lot v0.4 — le nom d'une cible de bonus : la compétence, ou la Défense.
@@ -606,10 +622,376 @@ function blocCulte(contexte, p, culte) {
 
 const rubriqueCultes = (contexte, p) => CULTES.map((culte) => blocCulte(contexte, p, culte));
 
+// ---- Lot v0.6 — le journal : ce que partagent Aventure et Combats ---------------------------------------
+
+// « livre 1, section 112 ».
+const lieu = (livre, section) => t('journal.lieu', { livre, section });
+
+// L'index ouvert par l'adresse : `ouvert` s'écrit exactement `lettre` suivie d'un entier sans zéro de tête, et cet
+// entier est un index de `liste` ; sinon null.
+function indexOuvert(ouvert, lettre, liste) {
+  if (typeof ouvert !== 'string' || !/^[qa](0|[1-9][0-9]*)$/.test(ouvert) || ouvert[0] !== lettre) return null;
+  const n = Number(ouvert.slice(1));
+  return n < liste.length ? n : null;
+}
+
+// Un champ nombre du journal, sans placeholder.
+const champSection = (test, libelle, min, valeur = '') => el('input', {
+  type: 'number', inputmode: 'numeric', min: String(min), test, 'aria-label': libelle, value: String(valeur),
+});
+
+// La jauge d'une Endurance : arrondi(actuelle / max × 100) %, 0 si max vaut 0.
+function jauge({ max, actuelle }) {
+  const barre = el('span');
+  barre.style.width = `${max === 0 ? 0 : Math.round((actuelle / max) * 100)}%`;
+  return el('div', { classe: 'jauge' }, barre);
+}
+
+// Le bouton à deux temps : un premier toucher remplace son texte par « Confirmer ? » pendant DELAI_CONFIRMATION, un
+// second dans ce délai applique `transformer` (options : celles de changer()). Le motif de « Supprimer le personnage ».
+function boutonDeuxTemps(contexte, id, { classe, test, texte, nom }, transformer, options = {}) {
+  const bouton = el('button', { classe, type: 'button', test, 'aria-label': t('feuille.retirer_nom', { nom }), texte });
+  let arme = false;
+  let minuterie = null;
+  bouton.addEventListener('click', () => {
+    if (!arme) {
+      arme = true;
+      bouton.textContent = t('journal.confirmer');
+      minuterie = setTimeout(() => {
+        arme = false;
+        bouton.textContent = texte;
+      }, DELAI_CONFIRMATION);
+      return;
+    }
+    clearTimeout(minuterie);
+    arme = false;
+    bouton.textContent = texte;
+    changer(contexte, id, transformer, options);
+  });
+  return bouton;
+}
+
+// La pastille d'une section (du chemin ou d'une quête) : toucher y mène. L'abréviation du livre seulement s'il
+// diffère du livre en cours.
+function pastille(contexte, p, { livre, section }, test) {
+  const bouton = el('button', { classe: 'puce pas', type: 'button', test, 'aria-label': t('journal.aller_a', { lieu: lieu(livre, section) }) });
+  if (livre !== p.section_en_cours.livre) bouton.append(el('span', { classe: 'pas-livre', texte: t('journal.livre_abr', { livre }) }));
+  bouton.append(String(section));
+  return action(bouton, contexte, p.id, (q) => allerSection(q, livre, section));
+}
+
+// ---- Lot v0.6 — la fiche : Aventure --------------------------------------------------------------------
+
+const PAS_VISIBLES = 8;
+
+// La section en cours, « Aller », le chemin parcouru (les 8 dernières sections, la plus récente d'abord ; les
+// suivantes dans « Tout le chemin »).
+function blocSectionCours(contexte, p) {
+  const { livre, section } = p.section_en_cours;
+  const champLivre = champSection('aller-livre', t('perso.livre'), 1, livre);
+  const champNumero = champSection('aller-section', t('journal.aller_section'), 1);
+  const erreur = el('p', { classe: 'erreur', test: 'aller-erreur', role: 'alert' });
+  const formulaire = el('form', { classe: 'aller', novalidate: '' },
+    el('label', { classe: 'champ-livre' }, el('span', { classe: 'legende', texte: t('perso.livre') }), champLivre),
+    el('label', { classe: 'champ-section' }, el('span', { classe: 'legende', texte: t('journal.aller_section') }), champNumero),
+    el('button', { classe: 'bouton', type: 'submit', test: 'aller', texte: t('journal.aller') }));
+  formulaire.addEventListener('submit', (evenement) => {
+    evenement.preventDefault();
+    erreur.textContent = '';
+    const livreSaisi = champLivre.value;
+    const sectionSaisie = champNumero.value;
+    const lus = [entierSaisi(livreSaisi), entierSaisi(sectionSaisie)];
+    if (lus.some((n) => n === null || n < 1)) {
+      erreur.textContent = t('journal.aller_invalide');
+      return;
+    }
+    changer(contexte, p.id, (q) => allerSection(q, livreSaisi, sectionSaisie), { declencheur: champNumero });
+  });
+
+  const chemin = el('div', { classe: 'chemin', test: 'chemin' }, el('p', { classe: 'petit-titre', texte: t('journal.chemin') }));
+  const pas = [...p.historique].reverse();
+  if (pas.length === 0) {
+    chemin.append(el('p', { classe: 'legende', texte: t('journal.chemin_vide') }));
+  } else {
+    const liste = (entrees) => el('ol', { classe: 'pas-liste' }, ...entrees.map((e) => el('li', {}, pastille(contexte, p, e, 'pas'))));
+    chemin.append(liste(pas.slice(0, PAS_VISIBLES)));
+    if (pas.length > PAS_VISIBLES) {
+      chemin.append(el('details', { classe: 'chemin-complet' },
+        el('summary', { classe: 'lien', texte: t('journal.chemin_tout', { n: pas.length }) }),
+        liste(pas.slice(PAS_VISIBLES))));
+    }
+  }
+  return el('section', { classe: 'cadre section-cours', test: 'section-cours' },
+    el('h2', { classe: 'petit-titre', texte: t('journal.section_cours') }),
+    el('div', { classe: 'cours-haut' },
+      el('p', { classe: 'numero-cours' },
+        el('span', { classe: 'livre-cours', texte: `${t('perso.livre')} ${livre}` }),
+        el('span', { classe: 'numero', test: 'section-numero', texte: section === null ? '—' : String(section) })),
+      formulaire),
+    erreur,
+    chemin);
+}
+
+// L'éditeur d'une quête ouverte : le titre, les personnages, les sections importantes, « Fermer » et « Retirer ».
+function editeurQuete(contexte, p, base, index) {
+  const quete = p.quetes[index];
+  const titre = el('input', { type: 'text', test: 'quete-titre', 'aria-label': t('journal.titre') });
+  titre.value = quete.titre;
+  titre.addEventListener('change', () => {
+    const texte = titre.value;
+    changer(contexte, p.id, (q) => modifierQuete(q, index, { titre: texte }));
+  });
+  const personnages = el('input', {
+    type: 'text', test: 'quete-personnages', placeholder: t('journal.personnages'), 'aria-label': t('journal.personnages'),
+  });
+  personnages.value = quete.personnages;
+  personnages.addEventListener('change', () => {
+    const texte = personnages.value;
+    changer(contexte, p.id, (q) => modifierQuete(q, index, { personnages: texte }), { rendre: false });
+  });
+  const sections = quete.sections.length === 0
+    ? el('p', { classe: 'legende', texte: t('journal.sections_vide') })
+    : el('ul', { classe: 'puces' }, ...quete.sections.map((e, rang) => el('li', { classe: 'puce' },
+      lieu(e.livre, e.section),
+      action(boutonRetirer('retirer', '×', lieu(e.livre, e.section)), contexte, p.id, (q) => retirerSectionQuete(q, index, rang)))));
+  const livre = champSection('quete-section-livre', t('perso.livre'), 1, p.section_en_cours.livre);
+  const section = champSection('quete-section-section', t('perso.section'), 1);
+  const ajouter = el('button', { classe: 'bouton bouton-second', type: 'button', test: 'quete-section-ajouter', texte: t('feuille.ajouter') });
+  action(ajouter, contexte, p.id, (q) => ajouterSectionQuete(q, index, livre.value, section.value));
+  return el('div', { classe: 'editeur editeur-quete', test: 'editeur-quete' },
+    el('label', { classe: 'petit-titre', texte: t('journal.titre') }, titre),
+    el('label', { classe: 'petit-titre', texte: t('journal.personnages') }, personnages),
+    el('p', { classe: 'petit-titre', texte: t('journal.sections') }),
+    sections,
+    el('div', { classe: 'ajout-section' },
+      el('label', {}, el('span', { classe: 'legende', texte: t('perso.livre') }), livre),
+      el('label', {}, el('span', { classe: 'legende', texte: t('perso.section') }), section),
+      ajouter),
+    el('div', { classe: 'actions' },
+      el('a', { classe: 'lien', href: base, texte: t('feuille.fermer') }),
+      boutonDeuxTemps(contexte, p.id, { classe: 'lien lien-danger', test: 'quete-retirer', texte: t('journal.quete_retirer'), nom: quete.titre },
+        (q) => retirerDeListe(q, 'quetes', index), { ancre: base })));
+}
+
+// La carte d'une quête : son titre et la case « Terminée » ; fermée, ses personnages, ses sections et « Modifier » ;
+// ouverte, son éditeur.
+function carteQuete(contexte, p, base, index, ouverte) {
+  const quete = p.quetes[index];
+  const caseTerminee = el('input', { type: 'checkbox', classe: 'case', test: 'quete-terminee' });
+  caseTerminee.checked = quete.terminee;
+  caseTerminee.addEventListener('change', () => {
+    const terminee = caseTerminee.checked;
+    changer(contexte, p.id, (q) => modifierQuete(q, index, { terminee }));
+  });
+  const carte = el('li', { classe: quete.terminee ? 'cadre quete finie' : 'cadre quete', test: 'quete' },
+    el('div', { classe: 'quete-entete' },
+      el('p', { classe: 'nom', texte: quete.titre }),
+      el('label', { classe: 'terminee' }, caseTerminee, el('span', { texte: t('journal.terminee') }))));
+  if (ouverte) {
+    carte.append(editeurQuete(contexte, p, base, index));
+    return carte;
+  }
+  if (quete.personnages !== '') {
+    carte.append(el('p', {}, el('span', { classe: 'legende', texte: t('feuille.etiquette', { libelle: t('journal.personnages') }) }), ` ${quete.personnages}`));
+  }
+  if (quete.sections.length > 0) {
+    carte.append(el('div', { classe: 'quete-sections' },
+      el('span', { classe: 'legende', texte: t('feuille.etiquette', { libelle: t('journal.sections') }) }),
+      ...quete.sections.map((e) => pastille(contexte, p, e, 'quete-pas'))));
+  }
+  carte.append(el('a', { classe: 'lien', test: 'quete-modifier', href: `${base}/q${index}`, texte: t('feuille.modifier') }));
+  return carte;
+}
+
+// Les quêtes : celles en cours, l'ajout, puis les terminées (dépliées si la quête ouverte en est une).
+function blocQuetes(contexte, p, base, ouverte) {
+  const indexes = p.quetes.map((_, index) => index);
+  const enCours = indexes.filter((index) => !p.quetes[index].terminee);
+  const finies = indexes.filter((index) => p.quetes[index].terminee);
+  const carte = (index) => carteQuete(contexte, p, base, index, index === ouverte);
+  const titre = el('h2', { classe: 'rubrique' }, t('journal.quetes'));
+  if (enCours.length > 0) titre.append(el('span', { classe: 'compte', texte: ` ${t('journal.en_cours', { n: enCours.length })}` }));
+  const section = el('section', { classe: 'bloc', test: 'quetes' }, titre);
+  if (enCours.length === 0) section.append(el('p', { classe: 'legende', texte: t('journal.quetes_vide') }));
+  section.append(el('ul', { classe: 'entrees' }, ...enCours.map(carte)),
+    ajoutTexte(contexte, p.id, 'quete-champ', 'quete-ajouter', t('journal.quete_ajouter'), ajouterQuete));
+  if (finies.length > 0) {
+    const details = el('details', { classe: 'quetes-finies', test: 'quetes-finies' },
+      el('summary', { classe: 'lien', texte: t('journal.quetes_finies', { n: finies.length }) }),
+      el('ul', { classe: 'entrees' }, ...finies.map(carte)));
+    if (finies.includes(ouverte)) details.setAttribute('open', '');
+    section.append(details);
+  }
+  return section;
+}
+
+// La date d'une note (« 25 oct. », « Oct 25 »), dans la langue de la page ; null si elle est illisible.
+function dateNote(iso) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat(document.documentElement.lang, { day: 'numeric', month: 'short' }).format(date);
+}
+
+// Les notes : l'ajout, puis les notes, la plus récente d'abord.
+function blocNotes(contexte, p) {
+  const champ = el('textarea', { test: 'note-champ', rows: '2', placeholder: t('journal.note_ajouter'), 'aria-label': t('journal.note_ajouter') });
+  const ajouter = el('button', { classe: 'bouton', type: 'button', test: 'note-ajouter', texte: t('feuille.ajouter') });
+  action(ajouter, contexte, p.id, (q) => ajouterNote(q, champ.value));
+  const section = el('section', { classe: 'bloc', test: 'notes' },
+    el('h2', { classe: 'rubrique', texte: t('journal.notes') }),
+    el('div', { classe: 'ajout-note' }, champ, ajouter));
+  if (p.notes.length === 0) {
+    section.append(el('p', { classe: 'legende', texte: t('journal.notes_vide') }));
+    return section;
+  }
+  const indexes = p.notes.map((_, index) => index).reverse();
+  section.append(el('ul', { classe: 'notes' }, ...indexes.map((index) => {
+    const note = p.notes[index];
+    const pied = [dateNote(note.ecrite_le), note.section === null ? null : lieu(note.livre, note.section)].filter((x) => x !== null);
+    return el('li', { classe: 'note', test: 'note' },
+      el('p', { classe: 'note-texte', texte: note.texte }),
+      el('p', { classe: 'note-pied' },
+        el('span', { classe: 'legende', texte: pied.join(' · ') }),
+        boutonDeuxTemps(contexte, p.id, { classe: 'lien', test: 'note-retirer', texte: t('feuille.retirer'), nom: Array.from(note.texte).slice(0, 30).join('') },
+          (q) => retirerDeListe(q, 'notes', index))));
+  })));
+  return section;
+}
+
+// `ouvert` : le quatrième morceau de l'adresse (q<n> ouvre la quête n), ou null.
+function rubriqueAventure(contexte, p, base, ouvert) {
+  return [blocSectionCours(contexte, p), blocQuetes(contexte, p, base, indexOuvert(ouvert, 'q', p.quetes)), blocNotes(contexte, p)];
+}
+
+// ---- Lot v0.6 — la fiche : Combats ---------------------------------------------------------------------
+
+// Les chiffres d'un combattant : Combat, Défense, puis l'Endurance à − / +.
+const chiffres = (combat, valeurDefense, endurance) => el('div', { classe: 'chiffres' },
+  el('div', { classe: 'chiffre' }, el('span', { classe: 'legende', texte: t('comp.combat') }), combat),
+  el('div', { classe: 'chiffre' }, el('span', { classe: 'legende', texte: t('feuille.defense') }), valeurDefense),
+  el('div', { classe: 'chiffre endu' }, el('span', { classe: 'legende', texte: t('feuille.endurance') }), endurance));
+
+const compteurEndurance = ({ max, actuelle }, moins, plus) => compteur('moyen', [String(actuelle), el('span', { classe: 'sur', texte: ` / ${max}` })], moins, plus);
+
+// Le personnage tel que la feuille le donne : le total de Combat, la Défense, son Endurance.
+function blocVous(contexte, p) {
+  const section = el('section', { classe: 'cadre combattant vous', test: 'vous' },
+    el('h2', { classe: 'petit-titre', texte: t('journal.vous') }),
+    chiffres(
+      el('span', { classe: 'moyen', test: 'vous-combat', texte: chiffre(totalCompetence(p, 'combat')) }),
+      el('span', { classe: 'moyen', test: 'vous-defense', texte: chiffre(defense(p)) }),
+      compteurEndurance(p.endurance,
+        { test: 'vous-moins', libelle: t('feuille.endurance_moins') },
+        { test: 'vous-plus', libelle: t('feuille.endurance_plus') })),
+    jauge(p.endurance));
+  action(section.querySelector('[data-test=vous-moins]'), contexte, p.id, (q) => changerEndurance(q, -1));
+  action(section.querySelector('[data-test=vous-plus]'), contexte, p.id, (q) => changerEndurance(q, 1));
+  return section;
+}
+
+// Les champs d'un adversaire, préfixe « nouveau » ou « adv » : le nom, puis le Combat, la Défense et l'Endurance.
+const CHAMPS_ADVERSAIRE = [['combat', () => t('comp.combat')], ['defense', () => t('feuille.defense')], ['endurance', () => t('feuille.endurance')]];
+
+function champsAdversaire(prefixe, valeurs = { nom: '', combat: '', defense: '', endurance: '' }) {
+  const nom = el('input', { type: 'text', test: `${prefixe}-nom`, placeholder: t('journal.adv_nom'), 'aria-label': t('journal.adv_nom') });
+  nom.value = valeurs.nom;
+  const nombres = CHAMPS_ADVERSAIRE.map(([champ, libelle]) => [champ, libelle, el('input', {
+    type: 'number', inputmode: 'numeric', min: '0', test: `${prefixe}-${champ}`, 'aria-label': libelle(), value: String(valeurs[champ]),
+  })]);
+  return {
+    bloc: el('div', { classe: 'ajout-adversaire' }, nom,
+      ...nombres.map(([, libelle, champ]) => el('label', {}, el('span', { classe: 'legende', texte: libelle() }), champ))),
+    saisie: () => ({ nom: nom.value, ...Object.fromEntries(nombres.map(([champ, , element]) => [champ, element.value])) }),
+  };
+}
+
+// La carte d'un adversaire : son nom et son lieu, ses chiffres, « Fin du combat » et « Modifier » ; ouverte, son éditeur.
+function carteAdversaire(contexte, p, base, index, ouverte) {
+  const adversaire = p.combats[index];
+  const entete = el('div', { classe: 'adv-entete' }, el('p', { classe: 'nom', texte: adversaire.nom }));
+  if (adversaire.section !== null) entete.append(el('span', { classe: 'legende', texte: lieu(adversaire.livre, adversaire.section) }));
+  const fin = el('button', { classe: 'bouton bouton-second', type: 'button', test: 'combat-fin', texte: t('journal.fin_combat') });
+  action(fin, contexte, p.id, (q) => finirCombat(q, index), { ancre: base });
+  const carte = el('li', { classe: 'cadre combattant adversaire', test: 'adversaire' },
+    entete,
+    chiffres(
+      el('span', { classe: 'moyen', texte: String(adversaire.combat) }),
+      el('span', { classe: 'moyen', texte: String(adversaire.defense) }),
+      compteurEndurance(adversaire.endurance,
+        { test: 'adv-moins', libelle: t('journal.adv_moins', { nom: adversaire.nom }) },
+        { test: 'adv-plus', libelle: t('journal.adv_plus', { nom: adversaire.nom }) })),
+    jauge(adversaire.endurance),
+    el('div', { classe: 'actions' },
+      fin,
+      el('a', { classe: 'lien', test: 'adv-modifier', href: ouverte ? base : `${base}/a${index}`, texte: ouverte ? t('feuille.fermer') : t('feuille.modifier') })));
+  action(carte.querySelector('[data-test=adv-moins]'), contexte, p.id, (q) => changerEnduranceAdversaire(q, index, -1));
+  action(carte.querySelector('[data-test=adv-plus]'), contexte, p.id, (q) => changerEnduranceAdversaire(q, index, 1));
+  if (!ouverte) return carte;
+  // Écrit, l'adresse revient aux Combats ; refusé, rien n'est enregistré et l'éditeur reste ouvert.
+  const champs = champsAdversaire('adv', { ...adversaire, endurance: adversaire.endurance.max });
+  const enregistrer = el('button', { classe: 'bouton', type: 'button', test: 'adv-enregistrer', texte: t('feuille.enregistrer') });
+  action(enregistrer, contexte, p.id, (q) => modifierAdversaire(q, index, champs.saisie()), { ancre: base });
+  carte.append(el('div', { classe: 'editeur', test: 'editeur-adversaire' },
+    champs.bloc,
+    el('div', { classe: 'actions' },
+      enregistrer,
+      boutonDeuxTemps(contexte, p.id, { classe: 'lien lien-danger', test: 'adv-retirer', texte: t('journal.adv_retirer'), nom: adversaire.nom },
+        (q) => retirerDeListe(q, 'combats', index), { ancre: base }))));
+  return carte;
+}
+
+// « Nouvel adversaire » : déplié quand aucun combat n'est en cours ; une saisie invalide le dit, rien n'est écrit.
+function ajoutAdversaire(contexte, p, ouvert) {
+  const champs = champsAdversaire('nouveau');
+  const erreur = el('p', { classe: 'erreur', role: 'alert' });
+  const ajouter = el('button', { classe: 'bouton', type: 'button', test: 'nouveau-ajouter', texte: t('feuille.ajouter') });
+  action(ajouter, contexte, p.id, (q) => {
+    const nouveau = ajouterAdversaire(q, champs.saisie());
+    erreur.textContent = nouveau === null ? t('journal.adv_invalide') : '';
+    return nouveau;
+  });
+  const details = el('details', { classe: 'ajout-entree', test: 'nouvel-adversaire' },
+    el('summary', { classe: 'lien', texte: t('journal.adv_nouveau') }),
+    el('div', { classe: 'champs-entree' }, champs.bloc, erreur, ajouter));
+  if (ouvert) details.setAttribute('open', '');
+  return details;
+}
+
+// Les combats passés, le plus récent d'abord : retirés d'un toucher, sans confirmation.
+function blocCombatsPasses(contexte, p, passes) {
+  return el('details', { classe: 'combats-passes', test: 'combats-passes' },
+    el('summary', { classe: 'lien', texte: t('journal.combats_passes', { n: passes.length }) }),
+    el('ul', { classe: 'passes' }, ...[...passes].reverse().map((index) => {
+      const combat = p.combats[index];
+      const { max, actuelle } = combat.endurance;
+      const ligne = t('journal.passe_chiffres', { combat: combat.combat, defense: combat.defense, actuelle, max });
+      return el('li', { test: 'combat-passe' },
+        el('span', { classe: 'objet' },
+          el('span', { classe: 'nom-passe', texte: combat.nom }),
+          el('span', { classe: 'legende', texte: combat.section === null ? ligne : `${ligne} · ${lieu(combat.livre, combat.section)}` })),
+        action(boutonRetirer('lien', t('feuille.retirer'), combat.nom), contexte, p.id, (q) => retirerDeListe(q, 'combats', index)));
+    })));
+}
+
+// `ouvert` : le quatrième morceau de l'adresse (a<n> ouvre l'adversaire n), ou null.
+function rubriqueCombats(contexte, p, base, ouvert) {
+  const ouverte = indexOuvert(ouvert, 'a', p.combats);
+  const indexes = p.combats.map((_, index) => index);
+  const enCours = indexes.filter((index) => !p.combats[index].termine);
+  const passes = indexes.filter((index) => p.combats[index].termine);
+  const noeuds = [blocVous(contexte, p), el('h2', { classe: 'rubrique', texte: t('journal.adversaires') })];
+  if (enCours.length === 0) noeuds.push(el('p', { classe: 'legende', texte: t('journal.combats_vide') }));
+  noeuds.push(
+    el('ul', { classe: 'entrees' }, ...enCours.map((index) => carteAdversaire(contexte, p, base, index, index === ouverte))),
+    ajoutAdversaire(contexte, p, enCours.length === 0));
+  if (passes.length > 0) noeuds.push(blocCombatsPasses(contexte, p, passes));
+  return noeuds;
+}
+
 // ---- La fiche ------------------------------------------------------------------------------------------
 
-// La fiche : #/perso/<id>[/<rubrique>[/<déplié>]] ; route = { id, rubrique, deplie, objet } (lot v0.4 : `objet`,
-// l'index de l'objet ouvert des Possessions).
+// La fiche : #/perso/<id>[/<rubrique>[/<déplié>]] ; route = { id, rubrique, deplie, objet, ouvert } (lot v0.4 : `objet`,
+// l'index de l'objet ouvert des Possessions ; lot v0.6 : `ouvert`, la quête ou l'adversaire ouvert).
 export async function vueFiche(contexte, route) {
   await file;
   const p = await lirePersonnage(route.id).catch(() => null);
@@ -619,7 +1001,7 @@ export async function vueFiche(contexte, route) {
   const racine = `#/perso/${encodeURIComponent(p.id)}`;
   const ligne = el('p', { classe: 'ligne', texte: ligneProfession(p) });
   if (p.pretire !== null) ligne.append(' · ', lienExterne('lien', 'fiche-alkonost', t('pretire.lire_fiche')));
-  const onglets = el('nav', { classe: 'sous-onglets', 'aria-label': t('feuille.rubriques') }, ...RUBRIQUES.map(([code, texte]) => {
+  const onglets = el('nav', { classe: 'sous-onglets rubriques-fiche', 'aria-label': t('feuille.rubriques') }, ...RUBRIQUES.map(([code, texte]) => {
     const lien = el('a', { test: 'sous-onglet', href: `${racine}/${code}`, texte: texte() });
     if (code === route.rubrique) lien.setAttribute('aria-current', 'page');
     return lien;
@@ -627,6 +1009,8 @@ export async function vueFiche(contexte, route) {
   let contenu;
   if (route.rubrique === 'possessions') contenu = rubriquePossessions(contexte, p, `${racine}/possessions`, route.objet);
   else if (route.rubrique === 'cultes') contenu = rubriqueCultes(contexte, p);
+  else if (route.rubrique === 'aventure') contenu = rubriqueAventure(contexte, p, `${racine}/aventure`, route.ouvert);
+  else if (route.rubrique === 'combats') contenu = rubriqueCombats(contexte, p, `${racine}/combats`, route.ouvert);
   else {
     const deplie = DEPLIABLES.includes(route.deplie) ? route.deplie : null;
     contenu = rubriqueStatistiques(contexte, p, `${racine}/statistiques`, deplie);

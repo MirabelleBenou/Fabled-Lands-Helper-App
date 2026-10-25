@@ -2,12 +2,17 @@
 // rien n'y touche window, document ou indexedDB. Chaque modification rend un personnage neuf (une copie), ou null
 // quand la règle la refuse : l'écran n'enregistre alors rien.
 // Lot v0.4 — le bonus des objets : une possession est un objet { texte, bonus }, son bonus entre seul dans le total.
+// Lot v0.6 — le journal : la section en cours et le chemin parcouru, les quêtes, les notes, les combats. Rien n'y
+// est calculé : ni jet, ni dégât, ni issue de combat.
 export const COMPETENCES = ['charisme', 'combat', 'magie', 'piete', 'exploration', 'adresse'];
 
 // Lot v0.4 — les cibles d'un bonus d'objet : les six compétences, dans l'ordre de COMPETENCES, puis la Défense.
 export const CIBLES = [...COMPETENCES, 'defense'];
 
 export const MAX_POSSESSIONS = 12;
+
+// Lot v0.6 — le chemin parcouru ne garde que ses 200 dernières sections.
+export const MAX_HISTORIQUE = 200;
 
 const somme = (bonus) => bonus.reduce((total, b) => total + b.valeur, 0);
 
@@ -178,7 +183,8 @@ export function changerBonusObjet(personnage, index, cible, valeur) {
   return nouveau;
 }
 
-// Retire l'entrée `index` d'une liste du personnage (possessions, titres, bénédictions, malédictions, résurrections).
+// Retire l'entrée `index` d'une liste du personnage (possessions, titres, bénédictions, malédictions, résurrections ;
+// lot v0.6 : quêtes, notes, combats).
 export function retirerDeListe(personnage, liste, index) {
   if (index < 0 || index >= personnage[liste].length) return null;
   const nouveau = copie(personnage);
@@ -221,5 +227,142 @@ export function feuilleLibre(personnage, saisie) {
     const valeur = nombreDepart(saisie.competences?.[code]);
     nouveau.competences[code] = { initiale: valeur, actuelle: valeur, bonus: [] };
   }
+  return nouveau;
+}
+
+// ---- Lot v0.6 — le journal ------------------------------------------------------------------------------
+
+// Une section valide : un livre et une section entiers ≥ 1, lus dans la saisie ; sinon null.
+function sectionSaisie(livreSaisi, sectionSaisie) {
+  const livre = entierSaisi(livreSaisi);
+  const section = entierSaisi(sectionSaisie);
+  if (livre === null || section === null || livre < 1 || section < 1) return null;
+  return { livre, section };
+}
+
+const dansListe = (liste, index) => Number.isInteger(index) && index >= 0 && index < liste.length;
+
+// « Aller » : la section quittée (si elle n'est pas null) s'ajoute à la fin du chemin, qui ne garde que ses
+// MAX_HISTORIQUE dernières entrées ; puis la section en cours change. La même section, ou une saisie invalide → null.
+export function allerSection(personnage, livreSaisi, sectionSaisi) {
+  const cible = sectionSaisie(livreSaisi, sectionSaisi);
+  if (cible === null) return null;
+  const { livre, section } = personnage.section_en_cours;
+  if (cible.livre === livre && cible.section === section) return null;
+  const nouveau = copie(personnage);
+  if (section !== null) {
+    nouveau.historique.push({ livre, section });
+    nouveau.historique = nouveau.historique.slice(-MAX_HISTORIQUE);
+  }
+  nouveau.section_en_cours = cible;
+  return nouveau;
+}
+
+// Une quête ne s'ajoute que si son titre (espaces de bord retirés) est non vide.
+export function ajouterQuete(personnage, titreSaisi) {
+  const titre = String(titreSaisi ?? '').trim();
+  if (titre === '') return null;
+  const nouveau = copie(personnage);
+  nouveau.quetes.push({ titre, personnages: '', sections: [], terminee: false });
+  return nouveau;
+}
+
+// `champs` : un ou plusieurs de titre, personnages (espaces de bord retirés) et terminee. Un titre vide, ou un index
+// hors de la liste → null.
+export function modifierQuete(personnage, index, champs) {
+  if (!dansListe(personnage.quetes, index)) return null;
+  const nouveau = copie(personnage);
+  const quete = nouveau.quetes[index];
+  if ('titre' in champs) {
+    const titre = String(champs.titre ?? '').trim();
+    if (titre === '') return null;
+    quete.titre = titre;
+  }
+  if ('personnages' in champs) quete.personnages = String(champs.personnages ?? '').trim();
+  if ('terminee' in champs) quete.terminee = champs.terminee === true;
+  return nouveau;
+}
+
+// Une section importante s'ajoute à la fin de celles de la quête ; saisie invalide, index hors de la liste ou
+// section déjà présente → null.
+export function ajouterSectionQuete(personnage, index, livreSaisi, sectionSaisi) {
+  const cible = sectionSaisie(livreSaisi, sectionSaisi);
+  if (cible === null || !dansListe(personnage.quetes, index)) return null;
+  if (personnage.quetes[index].sections.some((s) => s.livre === cible.livre && s.section === cible.section)) return null;
+  const nouveau = copie(personnage);
+  nouveau.quetes[index].sections.push(cible);
+  return nouveau;
+}
+
+export function retirerSectionQuete(personnage, index, rang) {
+  if (!dansListe(personnage.quetes, index) || !dansListe(personnage.quetes[index].sections, rang)) return null;
+  const nouveau = copie(personnage);
+  nouveau.quetes[index].sections.splice(rang, 1);
+  return nouveau;
+}
+
+// Une note ne s'ajoute que si son texte (espaces de bord retirés) est non vide ; elle porte le livre et la section
+// en cours et sa date. Les retours à la ligne intérieurs restent.
+export function ajouterNote(personnage, texteSaisi, maintenant = new Date()) {
+  const texte = String(texteSaisi ?? '').trim();
+  if (texte === '') return null;
+  const nouveau = copie(personnage);
+  const { livre, section } = personnage.section_en_cours;
+  nouveau.notes.push({ texte, livre, section, ecrite_le: maintenant.toISOString() });
+  return nouveau;
+}
+
+// La saisie d'un adversaire : le nom (espaces de bord retirés) non vide, le Combat, la Défense et l'Endurance entiers
+// ≥ 0 ; sinon null.
+function adversaireSaisi(saisie) {
+  const nom = String(saisie?.nom ?? '').trim();
+  const nombres = ['combat', 'defense', 'endurance'].map((champ) => entierSaisi(saisie?.[champ]));
+  if (nom === '' || nombres.some((n) => n === null || n < 0)) return null;
+  const [combat, defenseSaisie, endurance] = nombres;
+  return { nom, combat, defense: defenseSaisie, endurance };
+}
+
+// Un adversaire s'ajoute à la fin des combats, avec le livre et la section en cours, son Endurance pleine.
+export function ajouterAdversaire(personnage, saisie) {
+  const lu = adversaireSaisi(saisie);
+  if (lu === null) return null;
+  const nouveau = copie(personnage);
+  const { livre, section } = personnage.section_en_cours;
+  nouveau.combats.push({
+    nom: lu.nom, combat: lu.combat, defense: lu.defense, endurance: { max: lu.endurance, actuelle: lu.endurance }, livre, section, termine: false,
+  });
+  return nouveau;
+}
+
+// Le nom, le Combat, la Défense et l'Endurance maximale changent ; l'actuelle ne dépasse pas le nouveau maximum.
+export function modifierAdversaire(personnage, index, saisie) {
+  const lu = adversaireSaisi(saisie);
+  if (lu === null || !dansListe(personnage.combats, index)) return null;
+  const nouveau = copie(personnage);
+  const adversaire = nouveau.combats[index];
+  adversaire.nom = lu.nom;
+  adversaire.combat = lu.combat;
+  adversaire.defense = lu.defense;
+  adversaire.endurance.max = lu.endurance;
+  adversaire.endurance.actuelle = Math.min(adversaire.endurance.actuelle, lu.endurance);
+  return nouveau;
+}
+
+// L'Endurance actuelle d'un adversaire reste dans [0, max], comme celle du personnage.
+export function changerEnduranceAdversaire(personnage, index, delta) {
+  if (!dansListe(personnage.combats, index)) return null;
+  const { max, actuelle } = personnage.combats[index].endurance;
+  const cible = actuelle + delta;
+  if (cible < 0 || cible > max) return null;
+  const nouveau = copie(personnage);
+  nouveau.combats[index].endurance.actuelle = cible;
+  return nouveau;
+}
+
+// « Fin du combat » : le combat passe dans les combats passés ; déjà terminé ou index hors de la liste → null.
+export function finirCombat(personnage, index) {
+  if (!dansListe(personnage.combats, index) || personnage.combats[index].termine) return null;
+  const nouveau = copie(personnage);
+  nouveau.combats[index].termine = true;
   return nouveau;
 }

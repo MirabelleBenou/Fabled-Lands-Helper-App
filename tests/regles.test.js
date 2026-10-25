@@ -1,27 +1,39 @@
 // Lot v0.3 — tests des règles de calcul de la feuille d'aventure et de leurs bornes (js/regles.js).
+// Lot v0.6 — les transformations du journal : la section en cours et le chemin, les quêtes, les notes, les combats.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CIBLES,
   COMPETENCES,
+  MAX_HISTORIQUE,
   MAX_POSSESSIONS,
+  ajouterAdversaire,
   ajouterBonus,
   ajouterEntree,
+  ajouterNote,
   ajouterPossession,
+  ajouterQuete,
+  ajouterSectionQuete,
   ajouterTitre,
+  allerSection,
   bonusObjets,
   changerBase,
   changerBonusObjet,
   changerBourse,
   changerEndurance,
+  changerEnduranceAdversaire,
   changerEnduranceMax,
   changerNiveau,
   defense,
   entierSaisi,
   feuilleLibre,
+  finirCombat,
+  modifierAdversaire,
+  modifierQuete,
   operationBourse,
   retirerBonus,
   retirerDeListe,
+  retirerSectionQuete,
   signe,
   totalCompetence,
 } from '../js/regles.js';
@@ -329,4 +341,164 @@ test('retirer un objet retire son bonus du total', () => {
   const sans = retirerDeListe(p, 'possessions', 1);
   assert.deepEqual(sans.possessions, [{ texte: 'Lance', bonus: { cible: 'combat', valeur: 1 } }]);
   assert.equal(totalCompetence(sans, 'combat'), 6);
+});
+
+// ---- Lot v0.6 — le journal ----------------------------------------------------------------------------------
+
+// Le personnage d'essai à la section 192 du livre 1, avec deux sections au chemin.
+function enRoute() {
+  const p = perso();
+  p.section_en_cours = { livre: 1, section: 192 };
+  p.historique = [{ livre: 1, section: 1 }, { livre: 1, section: 163 }];
+  return p;
+}
+
+test('MAX_HISTORIQUE vaut 200', () => {
+  assert.equal(MAX_HISTORIQUE, 200);
+});
+
+test('allerSection : la section quittée entre à la fin du chemin, la section en cours change', () => {
+  const p = enRoute();
+  const apres = allerSection(p, '1', ' 205 ');
+  assert.deepEqual(apres.section_en_cours, { livre: 1, section: 205 });
+  assert.deepEqual(apres.historique, [{ livre: 1, section: 1 }, { livre: 1, section: 163 }, { livre: 1, section: 192 }]);
+  assert.deepEqual(allerSection(p, 2, 10).section_en_cours, { livre: 2, section: 10 });
+  assert.deepEqual(p.section_en_cours, { livre: 1, section: 192 });
+  assert.equal(p.historique.length, 2);
+});
+
+test('allerSection : la même section → null ; le même numéro dans un autre livre change', () => {
+  const p = enRoute();
+  assert.equal(allerSection(p, '1', '192'), null);
+  assert.deepEqual(allerSection(p, '2', '192').section_en_cours, { livre: 2, section: 192 });
+});
+
+test('allerSection : saisie vide, 0, négative ou non entière → null', () => {
+  const p = enRoute();
+  for (const [livre, section] of [['1', ''], ['', '12'], ['1', '0'], ['0', '12'], ['1', '-3'], ['1', '2.5'], ['un', '12'], [null, undefined]]) {
+    assert.equal(allerSection(p, livre, section), null, `${livre} / ${section}`);
+  }
+});
+
+test('allerSection : une section en cours null n\'entre pas au chemin', () => {
+  const p = enRoute();
+  p.section_en_cours = { livre: 1, section: null };
+  const apres = allerSection(p, '1', '15');
+  assert.deepEqual(apres.section_en_cours, { livre: 1, section: 15 });
+  assert.deepEqual(apres.historique, p.historique);
+});
+
+test('allerSection : à 200 entrées, la plus ancienne sort', () => {
+  const p = enRoute();
+  p.historique = Array.from({ length: 200 }, (_, i) => ({ livre: 1, section: i + 1 }));
+  const apres = allerSection(p, '1', '400');
+  assert.equal(apres.historique.length, 200);
+  assert.deepEqual(apres.historique[0], { livre: 1, section: 2 });
+  assert.deepEqual(apres.historique.at(-1), { livre: 1, section: 192 });
+});
+
+test('ajouterQuete : titre aux espaces de bord retirés ; titre vide → null', () => {
+  const p = perso();
+  const apres = ajouterQuete(p, '  Trouver un passeur ');
+  assert.deepEqual(apres.quetes, [{ titre: 'Trouver un passeur', personnages: '', sections: [], terminee: false }]);
+  for (const titre of ['', '   ', null, undefined]) assert.equal(ajouterQuete(p, titre), null, String(titre));
+  assert.deepEqual(p.quetes, []);
+});
+
+test('modifierQuete : titre, personnages, terminee ; titre vide ou index hors de la liste → null', () => {
+  const p = ajouterQuete(ajouterQuete(perso(), 'Une'), 'Deux');
+  const apres = modifierQuete(p, 1, { titre: ' Deux bis ', personnages: ' Orlo ', terminee: true });
+  assert.deepEqual(apres.quetes[1], { titre: 'Deux bis', personnages: 'Orlo', sections: [], terminee: true });
+  assert.deepEqual(apres.quetes[0], p.quetes[0]);
+  assert.equal(modifierQuete(apres, 1, { terminee: false }).quetes[1].terminee, false);
+  assert.equal(modifierQuete(p, 0, { personnages: '' }).quetes[0].personnages, '');
+  assert.equal(modifierQuete(p, 0, { titre: '  ' }), null);
+  for (const index of [-1, 2, 9]) assert.equal(modifierQuete(p, index, { terminee: true }), null, String(index));
+});
+
+test('ajouterSectionQuete : à la fin ; doublon, saisie invalide ou index hors de la liste → null', () => {
+  const p = ajouterQuete(perso(), 'Une');
+  const une = ajouterSectionQuete(p, 0, '1', '112');
+  const deux = ajouterSectionQuete(une, 0, '1', '87');
+  assert.deepEqual(deux.quetes[0].sections, [{ livre: 1, section: 112 }, { livre: 1, section: 87 }]);
+  assert.equal(ajouterSectionQuete(deux, 0, '1', '112'), null);
+  assert.deepEqual(ajouterSectionQuete(deux, 0, '2', '112').quetes[0].sections.at(-1), { livre: 2, section: 112 });
+  assert.equal(ajouterSectionQuete(p, 0, '1', ''), null);
+  assert.equal(ajouterSectionQuete(p, 0, '0', '5'), null);
+  assert.equal(ajouterSectionQuete(p, 1, '1', '5'), null);
+});
+
+test('retirerSectionQuete : retire le rang ; index ou rang hors de la liste → null', () => {
+  const p = ajouterSectionQuete(ajouterSectionQuete(ajouterQuete(perso(), 'Une'), 0, 1, 112), 0, 1, 87);
+  assert.deepEqual(retirerSectionQuete(p, 0, 0).quetes[0].sections, [{ livre: 1, section: 87 }]);
+  for (const [index, rang] of [[0, 2], [0, -1], [1, 0], [-1, 0]]) assert.equal(retirerSectionQuete(p, index, rang), null, `${index} / ${rang}`);
+});
+
+test('ajouterNote : le livre, la section en cours et la date ; texte vide → null ; les retours à la ligne restent', () => {
+  const p = enRoute();
+  const maintenant = new Date('2026-10-25T17:20:00.000Z');
+  const apres = ajouterNote(p, '  Le temple.\nDix chardes.  ', maintenant);
+  assert.deepEqual(apres.notes, [{ texte: 'Le temple.\nDix chardes.', livre: 1, section: 192, ecrite_le: '2026-10-25T17:20:00.000Z' }]);
+  for (const texte of ['', ' \n ', null]) assert.equal(ajouterNote(p, texte, maintenant), null, String(texte));
+  p.section_en_cours = { livre: 1, section: null };
+  assert.deepEqual(ajouterNote(p, 'Sans section', maintenant).notes[0], { texte: 'Sans section', livre: 1, section: null, ecrite_le: '2026-10-25T17:20:00.000Z' });
+});
+
+test('ajouterAdversaire : valide, avec la section en cours et l\'Endurance pleine', () => {
+  const p = enRoute();
+  const apres = ajouterAdversaire(p, { nom: ' Garde corrompu ', combat: '6', defense: '9', endurance: '14' });
+  assert.deepEqual(apres.combats, [{
+    nom: 'Garde corrompu', combat: 6, defense: 9, endurance: { max: 14, actuelle: 14 }, livre: 1, section: 192, termine: false,
+  }]);
+  assert.deepEqual(ajouterAdversaire(p, { nom: 'Rat', combat: '0', defense: '0', endurance: '0' }).combats[0].endurance, { max: 0, actuelle: 0 });
+});
+
+test('ajouterAdversaire : nom vide, nombre vide, négatif ou non entier → null', () => {
+  const p = perso();
+  const bon = { nom: 'Loup', combat: '4', defense: '6', endurance: '9' };
+  assert.notEqual(ajouterAdversaire(p, bon), null);
+  for (const [champ, valeur] of [['nom', ''], ['nom', '  '], ['combat', ''], ['combat', '-1'], ['defense', '2.5'], ['endurance', 'neuf'], ['endurance', '-4']]) {
+    assert.equal(ajouterAdversaire(p, { ...bon, [champ]: valeur }), null, `${champ} = ${valeur}`);
+  }
+});
+
+test('modifierAdversaire : nom et chiffres changent ; l\'actuelle ramenée sous le nouveau maximum ; invalide → null', () => {
+  const p = ajouterAdversaire(enRoute(), { nom: 'Loup', combat: '4', defense: '6', endurance: '9' });
+  p.combats[0].endurance.actuelle = 7;
+  const plus = modifierAdversaire(p, 0, { nom: 'Grand loup', combat: '5', defense: '7', endurance: '12' });
+  assert.deepEqual(plus.combats[0], { ...p.combats[0], nom: 'Grand loup', combat: 5, defense: 7, endurance: { max: 12, actuelle: 7 } });
+  assert.deepEqual(modifierAdversaire(p, 0, { nom: 'Loup', combat: '4', defense: '6', endurance: '5' }).combats[0].endurance, { max: 5, actuelle: 5 });
+  assert.equal(modifierAdversaire(p, 0, { nom: '', combat: '4', defense: '6', endurance: '5' }), null);
+  assert.equal(modifierAdversaire(p, 1, { nom: 'Loup', combat: '4', defense: '6', endurance: '5' }), null);
+});
+
+test('changerEnduranceAdversaire : reste dans [0, max] ; aux deux bornes → null', () => {
+  const p = ajouterAdversaire(perso(), { nom: 'Loup', combat: '4', defense: '6', endurance: '2' });
+  assert.equal(changerEnduranceAdversaire(p, 0, 1), null);
+  const un = changerEnduranceAdversaire(p, 0, -1);
+  assert.equal(un.combats[0].endurance.actuelle, 1);
+  const zero = changerEnduranceAdversaire(un, 0, -1);
+  assert.equal(zero.combats[0].endurance.actuelle, 0);
+  assert.equal(changerEnduranceAdversaire(zero, 0, -1), null);
+  assert.equal(changerEnduranceAdversaire(zero, 0, 1).combats[0].endurance.actuelle, 1);
+  assert.equal(changerEnduranceAdversaire(p, 3, -1), null);
+});
+
+test('finirCombat : termine devient true ; deux fois, ou index hors de la liste → null', () => {
+  const p = ajouterAdversaire(perso(), { nom: 'Loup', combat: '4', defense: '6', endurance: '9' });
+  const fini = finirCombat(p, 0);
+  assert.equal(fini.combats[0].termine, true);
+  assert.equal(p.combats[0].termine, false);
+  assert.equal(finirCombat(fini, 0), null);
+  assert.equal(finirCombat(p, 1), null);
+});
+
+test('retirerDeListe sert aussi pour les quêtes, les notes et les combats', () => {
+  let p = ajouterQuete(ajouterQuete(perso(), 'Une'), 'Deux');
+  p = ajouterNote(p, 'Note', MAINTENANT);
+  p = ajouterAdversaire(p, { nom: 'Loup', combat: '4', defense: '6', endurance: '9' });
+  assert.deepEqual(retirerDeListe(p, 'quetes', 0).quetes.map((q) => q.titre), ['Deux']);
+  assert.deepEqual(retirerDeListe(p, 'notes', 0).notes, []);
+  assert.deepEqual(retirerDeListe(p, 'combats', 0).combats, []);
+  assert.equal(retirerDeListe(p, 'combats', 1), null);
 });

@@ -531,3 +531,132 @@ input:disabled, .bouton:disabled { opacity: .5; cursor: default; }
 .des-detail { margin: 0; font-size: 17px; font-style: italic; color: var(--encre-douce); font-variant-numeric: tabular-nums lining-nums; }
 .des-actions { margin: 0; display: flex; justify-content: center; gap: 24px; }
 .des-actions .lien { background: none; border: 0; padding: 0 4px; font: inherit; font-size: 17px; cursor: pointer; }
+
+/* Lot v0.6 — le journal : les rubriques Aventure et Combats, la case à cocher. */
+@media (max-width: 520px) {
+  .rubriques-fiche { display: grid; grid-template-columns: repeat(3, auto); justify-content: space-between; gap: 0 12px; }
+  .rubriques-fiche a { justify-content: center; }
+}
+.lien-danger { color: var(--echec); }
+
+/* La case à cocher, dessinée à l'encre. */
+.case {
+  appearance: none;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  margin: 0;
+  display: inline-grid;
+  place-content: center;
+  background: var(--page);
+  border: 1.5px solid var(--filet);
+  border-radius: 3px;
+  cursor: pointer;
+}
+.case::after {
+  content: "";
+  width: 14px;
+  height: 8px;
+  margin-top: -4px;
+  border-left: 3px solid var(--accent);
+  border-bottom: 3px solid var(--accent);
+  transform: rotate(-45deg) scale(0);
+  transition: transform .12s ease-out;
+}
+.case:checked::after { transform: rotate(-45deg) scale(1); }
+.case:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.terminee { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding-left: 8px; font-style: italic; color: var(--encre-douce); cursor: pointer; }
+
+/* La section en cours : le numéro, « Aller à », le chemin parcouru. */
+.cours-haut { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+.numero-cours { display: flex; flex-direction: column; margin: 0; }
+.livre-cours { font: italic 400 17px/1.2 var(--police-texte); color: var(--encre-douce); }
+.numero { font: 700 56px/1 var(--police-texte); font-variant-numeric: lining-nums tabular-nums; color: var(--encre); }
+.aller { display: grid; grid-template-columns: 4.5em 7em auto; align-items: end; gap: 8px; margin: 0; }
+.aller label { display: grid; gap: 2px; }
+.aller .legende { font-size: 14px; }
+.section-cours .erreur { margin-top: 8px; }
+.chemin { margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--filet); }
+.chemin .petit-titre { font-size: 16px; }
+.chemin .legende { margin: 0; }
+.pas-liste { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.pas-liste li { display: flex; align-items: center; }
+.puce.pas {
+  min-height: 40px;
+  min-width: 52px;
+  justify-content: center;
+  padding: 0 12px;
+  font: 400 17px/1 var(--police-texte);
+  font-style: normal;
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--encre);
+  background: var(--page);
+  cursor: pointer;
+}
+.puce.pas:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chemin > .pas-liste li:first-child .puce.pas { border-color: var(--accent); border-width: 1.5px; }
+.pas-livre { font-size: 13px; color: var(--encre-douce); margin-right: 3px; }
+.chemin-complet summary { list-style: none; cursor: pointer; }
+.chemin-complet summary::-webkit-details-marker { display: none; }
+.chemin-complet .pas-liste { margin-top: 4px; }
+@media (max-width: 520px) {
+  .cours-haut { flex-direction: column; align-items: stretch; }
+  .aller { grid-template-columns: 4.5em 1fr auto; }
+}
+
+/* Les quêtes. */
+.quete-entete { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.quete-entete .nom { margin: 10px 0 4px; }
+.quete p { margin: 0 0 6px; }
+.quete-sections { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0 0 4px; }
+.quete.finie { opacity: .72; }
+.quete.finie .nom { text-decoration: line-through; text-decoration-thickness: 1px; }
+.quetes-finies, .combats-passes { margin-top: 4px; }
+.quetes-finies summary, .combats-passes summary { list-style: none; cursor: pointer; }
+.quetes-finies summary::-webkit-details-marker, .combats-passes summary::-webkit-details-marker { display: none; }
+.quetes-finies .entrees { margin-top: 8px; }
+.editeur-quete { display: grid; gap: 6px; margin-top: 8px; padding: 4px 0 4px 16px; border-left: 2px solid var(--accent); }
+.editeur-quete .petit-titre { margin: 8px 0 0; font-size: 16px; }
+.editeur-quete .puces { margin: 0; }
+.editeur-quete .actions { margin: 6px 0 0; justify-content: space-between; }
+.ajout-section { display: grid; grid-template-columns: 4.5em minmax(0, 7em) auto; gap: 8px; justify-content: start; }
+.entrees > li, .editeur-quete > * { min-width: 0; }
+.ajout-section { align-items: end; }
+.ajout-section label { display: grid; gap: 2px; min-width: 0; }
+.ajout-section .legende { font-size: 14px; }
+@media (max-width: 520px) { .ajout-section { grid-template-columns: 4.5em minmax(0, 1fr) auto; justify-content: stretch; } }
+
+/* Les notes. */
+.ajout-note { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 8px; margin: 0 0 12px; }
+.notes { margin: 0; padding: 0; list-style: none; }
+.note { padding: 10px 0 0; border-bottom: 1px dashed var(--filet); }
+.note-texte { margin: 0; white-space: pre-wrap; }
+.note-pied { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 12px; margin: 0; }
+.note-pied .legende { font-style: italic; }
+
+/* Les combats : vous, les adversaires, les combats passés. */
+.combattant .chiffres { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 28px; }
+.chiffre { display: grid; gap: 4px; justify-items: start; }
+.chiffre .legende { font-size: 14px; }
+.chiffre .moyen { text-align: left; }
+.chiffre.endu { margin-left: auto; }
+.combattant .compteur { gap: 10px; }
+.combattant .sur { font-size: 20px; }
+.vous { margin-bottom: 4px; }
+.vous .petit-titre { color: var(--accent); }
+.adversaire .jauge span { background: var(--echec); }
+.adv-entete { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 12px; margin-bottom: 6px; }
+.adv-entete .nom { margin: 0; }
+.adversaire .actions { margin: 12px 0 0; justify-content: space-between; }
+.adversaire .editeur { margin-top: 12px; padding: 4px 0 4px 16px; border-left: 2px solid var(--accent); }
+.ajout-adversaire { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ajout-adversaire input[type="text"] { grid-column: 1 / -1; }
+.ajout-adversaire label { display: grid; gap: 2px; }
+.ajout-adversaire .legende { font-size: 14px; }
+.passes { margin: 8px 0 0; padding: 0; list-style: none; }
+.passes li { display: flex; align-items: center; gap: 12px; border-bottom: 1px dashed var(--filet); }
+.passes .objet { display: grid; gap: 2px; }
+.nom-passe { font-weight: 700; }
+@media (max-width: 520px) {
+  .chiffre.endu { margin-left: 0; flex-basis: 100%; }
+}

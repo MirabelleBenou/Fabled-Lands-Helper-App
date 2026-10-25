@@ -3,6 +3,7 @@
 // Lot v0.3 — les routes de la création et de la fiche (js/feuille.js) ; le haut de page seulement quand la page change.
 // Lot v0.3.1 — la page du mode pré-tiré comprend le choix : toucher un personnage ramène l'écran en haut.
 // Lot v0.4 — la route de l'éditeur du bonus d'un objet, #/perso/<id>/possessions/<index>.
+// Lot v0.6 — les rubriques Aventure et Combats, et ce qu'elles ouvrent : #/perso/<id>/aventure|combats/<ouvert>.
 import { chargerLangue, choisirLangue, traduirePage } from './i18n.js';
 import { lire } from './sauvegarde.js';
 import { ecouterInstallation, surveillerControleur } from './pwa.js';
@@ -44,7 +45,7 @@ window.__FLH__ = { importer };
 
 // Les routes sont des ancres. Toute route inconnue mène à l'accueil. `page` nomme la page affichée : le haut de
 // page n'est remis que quand elle change (lot v0.3).
-const RUBRIQUES = ['statistiques', 'possessions', 'cultes'];
+const RUBRIQUES = ['statistiques', 'possessions', 'cultes', 'aventure', 'combats'];
 
 function analyserRoute(hash) {
   const morceaux = hash.replace(/^#\/?/, '').split('/');
@@ -80,7 +81,10 @@ function analyserRoute(hash) {
     // Lot v0.4 — #/perso/<id>/possessions/<index> : l'objet ouvert (un entier ; la fiche vérifie qu'il est dans la
     // liste) ; la page reste celle des Possessions, l'ouverture ne ramène pas en haut.
     const objet = morceaux[2] === 'possessions' && morceaux.length === 4 && /^(0|[1-9][0-9]*)$/.test(morceaux[3]) ? Number(morceaux[3]) : null;
-    return { vue: vueFiche, onglet: 'accueil', page: `perso/${id}/${rubrique}`, id, rubrique, deplie, objet };
+    // Lot v0.6 — #/perso/<id>/aventure/<ouvert>, #/perso/<id>/combats/<ouvert> : le quatrième morceau tel quel (la
+    // fiche le lit) ; la page reste celle de la rubrique.
+    const ouvert = (morceaux[2] === 'aventure' || morceaux[2] === 'combats') && morceaux.length === 4 ? morceaux[3] : null;
+    return { vue: vueFiche, onglet: 'accueil', page: `perso/${id}/${rubrique}`, id, rubrique, deplie, objet, ouvert };
   }
   return accueil;
 }
