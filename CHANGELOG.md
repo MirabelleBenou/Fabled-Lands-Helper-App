@@ -3,6 +3,19 @@
 *Une entrée par version, la plus récente en tête ; sous chaque entrée, les fichiers touchés, en sous-puces à deux
 espaces de retrait.*
 
+## v0.6 — 2026-10-25
+
+- Le journal : deux rubriques de plus sur la fiche. Aventure : la section en cours, que « Aller » change en inscrivant la section quittée dans le chemin parcouru (un toucher sur une section du chemin y ramène) ; les quêtes, avec leurs personnages, leurs sections importantes et la case « Terminée » ; les notes, rattachées à la section et à la date où elles ont été écrites. Combats : le Combat, la Défense et l'Endurance du personnage, celle de la feuille ; un adversaire par carte, avec son Endurance à − / + ; « Fin du combat » le range dans les combats passés. L'application ne calcule rien (sauvegarde au schéma 4).
+  - `js/sauvegarde.js` : le schéma 4, la complétion des quatre listes du journal (`historique`, `quetes`, `notes`, `combats`), `personnageNeuf` avec ces listes vides
+  - `js/regles.js` : `MAX_HISTORIQUE`, `allerSection`, `ajouterQuete`, `modifierQuete`, `ajouterSectionQuete`, `retirerSectionQuete`, `ajouterNote`, `ajouterAdversaire`, `modifierAdversaire`, `changerEnduranceAdversaire`, `finirCombat` ; `retirerDeListe` sert aussi pour les quêtes, les notes et les combats
+  - `js/feuille.js` : les rubriques Aventure (la section en cours, « Aller », le chemin parcouru, les quêtes et leur éditeur, les notes) et Combats (vous, les adversaires et leur éditeur, les combats passés)
+  - `js/app.js` : les rubriques `aventure` et `combats`, les routes `#/perso/<id>/aventure/q<n>` et `#/perso/<id>/combats/a<n>`, sans retour en haut de page
+  - `css/app.css` : la feuille de style du lot
+  - `js/version.js` : `v0.6` (le cache hors ligne devient `flh-v0.6`)
+  - `i18n/fr.json`, `i18n/en.json` : 39 clés neuves (194 clés)
+  - `tests/sauvegarde.test.js`, `tests/regles.test.js` : 9 et 17 tests neufs ; les tests du schéma 3 comme schéma courant mis au schéma 4
+  - `CHANGELOG.md` : cette entrée
+
 ## v0.5 — 2026-10-25
 
 - Les dés : sur la fiche, un bouton en forme de dé ouvre le choix « 1 dé » ou « 2 dés ». Les dés, en cubes, sont lancés depuis le bas de l'écran, roulent sur la page en rebondissant et s'arrêtent d'eux-mêmes sur la face tirée ; ils restent posés avec leur total, et le dernier jet reste écrit au-dessus du bouton. L'application ne calcule rien : le joueur lit le résultat et le reporte lui-même.
