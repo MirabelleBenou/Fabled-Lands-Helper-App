@@ -135,5 +135,7 @@
   "feuille.bourse_plus": "Add one Shard",
   "apropos.pretires": "The pre-generated characters use the starting scores and possessions from the sheets Alkonost publishes for books 1 and 2: six characters by Dave Morris and Jamie Thomson, and three created for the French edition. Their portrait and story stay on the publisher's page. All rights in these characters remain with their authors and the publisher.",
   "feuille.bourse_insuffisante": "Your money holds only {n} Shards.",
-  "feuille.etiquette": "{libelle}:"
+  "feuille.etiquette": "{libelle}:",
+  "pretire.consigne": "Tap a character to choose it; its name and the \"Create\" button will appear here.",
+  "installation.raccourci": "If the icon does not appear on the home screen, check in the device settings that your browser is allowed to create home screen shortcuts, then try again."
 }

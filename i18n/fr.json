@@ -135,5 +135,7 @@
   "feuille.bourse_plus": "Ajouter une charde",
   "apropos.pretires": "Les personnages pré-tirés reprennent les chiffres et les possessions de départ des fiches publiées par Alkonost pour les livres 1 et 2 : six personnages de Dave Morris et Jamie Thomson, et trois créés pour l'édition française. Leur portrait et leur histoire restent sur la page de l'éditeur. Tous les droits sur ces personnages restent à leurs auteurs et à l'éditeur.",
   "feuille.bourse_insuffisante": "La bourse ne contient que {n} chardes.",
-  "feuille.etiquette": "{libelle} :"
+  "feuille.etiquette": "{libelle} :",
+  "pretire.consigne": "Touchez un personnage pour le choisir ; son nom et le bouton « Créer » apparaîtront ici.",
+  "installation.raccourci": "Si l'icône n'apparaît pas sur l'écran d'accueil, vérifiez dans les paramètres de l'appareil que votre navigateur a l'autorisation de créer des raccourcis sur l'écran d'accueil, puis recommencez."
 }

@@ -1,6 +1,7 @@
 // Lot v0.1 — les cinq écrans. Chaque vue rend la liste des nœuds de l'écran ; app.js les pose.
 // Lot v0.2 — l'aide « Installer l'application », la section « Application » des réglages, le stockage bloqué.
 // Lot v0.3 — la création et la fiche passent dans js/feuille.js ; le paragraphe des pré-tirés dans « Droits et sources ».
+// Lot v0.3.1 — la ligne d'aide « l'icône n'apparaît pas », à l'accueil et dans les réglages.
 // Le texte saisi ou importé n'entre jamais comme HTML : textContent ou création d'éléments.
 import { t } from './i18n.js';
 import { VERSION } from './version.js';
@@ -51,9 +52,11 @@ function aideInstallation(etat) {
   if (etat === 'proposable') {
     const bouton = el('button', { classe: 'bouton', type: 'button', test: 'installer', texte: t('installation.bouton') });
     bouton.addEventListener('click', () => installer());
-    section.append(el('div', { classe: 'actions' }, bouton, masquer));
+    section.append(el('p', { classe: 'legende', test: 'installer-raccourci', texte: t('installation.raccourci') }),
+      el('div', { classe: 'actions' }, bouton, masquer));
   } else {
     section.append(el('p', { classe: 'legende', test: 'installer-geste', texte: t('installation.geste') }),
+      el('p', { classe: 'legende', test: 'installer-raccourci', texte: t('installation.raccourci') }),
       el('div', { classe: 'actions' }, masquer));
   }
   return section;
@@ -176,7 +179,8 @@ export async function vueReglages(contexte) {
       el('p', { classe: 'legende', test: 'version', texte: `${t('reglages.version')} ${VERSION}` }),
       el('div', { classe: 'actions' }, verifier),
       majMessage,
-      installation),
+      installation,
+      ...(etat === 'installee' ? [] : [el('p', { classe: 'legende', test: 'installer-raccourci', texte: t('installation.raccourci') })])),
   ];
 }
 

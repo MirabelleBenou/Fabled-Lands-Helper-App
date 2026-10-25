@@ -118,17 +118,20 @@ function cartePretire(pretire, choisi) {
 
 function modePretire(contexte, idChoisi) {
   const choisi = idChoisi === null ? null : pretireParId(idChoisi);
-  const noeuds = [
-    el('p', { classe: 'legende source-pretires', texte: t('pretire.source') }),
-    lienExterne('lien', 'lien-pretires', t('pretire.lire_toutes')),
-    el('ul', { classe: 'pretires' }, ...PRETIRES.map((p) => cartePretire(p, p === choisi))),
-  ];
+  // Lot v0.3.1 — en tête : le formulaire du personnage choisi, ou la consigne qui dit où il apparaîtra.
+  const noeuds = [];
   if (choisi !== null) {
     const champ = champNom(choisi.nom);
     const formulaire = el('form', { novalidate: '' }, champ.bloc, actionsCreation());
     surCreation(contexte, formulaire, champ, (nom) => personnagePretire(choisi, nom));
     noeuds.push(formulaire);
+  } else {
+    noeuds.push(el('p', { classe: 'legende', test: 'consigne-pretire', texte: t('pretire.consigne') }));
   }
+  noeuds.push(
+    el('p', { classe: 'legende source-pretires', texte: t('pretire.source') }),
+    lienExterne('lien', 'lien-pretires', t('pretire.lire_toutes')),
+    el('ul', { classe: 'pretires' }, ...PRETIRES.map((p) => cartePretire(p, p === choisi))));
   return noeuds;
 }
 

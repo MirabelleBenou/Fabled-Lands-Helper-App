@@ -1,6 +1,7 @@
 // Lot v0.1 — le démarrage : réglages, langue, ambiance, routes, data-pret, window.__FLH__, service worker.
 // Lot v0.2 — l'écoute de l'installation, le bandeau de mise à jour, l'enregistrement du service worker à jour.
 // Lot v0.3 — les routes de la création et de la fiche (js/feuille.js) ; le haut de page seulement quand la page change.
+// Lot v0.3.1 — la page du mode pré-tiré comprend le choix : toucher un personnage ramène l'écran en haut.
 import { chargerLangue, choisirLangue, traduirePage } from './i18n.js';
 import { lire } from './sauvegarde.js';
 import { ecouterInstallation, surveillerControleur } from './pwa.js';
@@ -56,7 +57,7 @@ function analyserRoute(hash) {
       } catch {
         choix = null;
       }
-      return { vue: vueNouveau, onglet: 'accueil', page: 'nouveau/pretire', mode: 'pretire', choix };
+      return { vue: vueNouveau, onglet: 'accueil', page: `nouveau/pretire/${choix ?? ''}`, mode: 'pretire', choix };
     }
     if (morceaux[1] === 'libre' && morceaux.length === 2) {
       return { vue: vueNouveau, onglet: 'accueil', page: 'nouveau/libre', mode: 'libre', choix: null };

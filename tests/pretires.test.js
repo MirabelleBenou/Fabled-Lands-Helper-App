@@ -9,7 +9,7 @@ import { LIENS } from '../js/liens.js';
 const MAINTENANT = new Date('2026-10-24T10:00:00.000Z');
 const fabrique = (p) => personnagePretire(p, p.nom, MAINTENANT, `id-${p.id}`);
 
-// Le tableau du cadrage (§2-9) : id, niveau, six compétences, possessions, exclusif, Défense publiée.
+// Les pré-tirés publiés : id, niveau, six compétences, possessions, exclusif, Défense publiée.
 const TABLEAU = [
   ['liana', 'Liana la Vive', 'Voyageuse', 1, [2, 5, 2, 3, 6, 4], ['Lance', 'Gilet en cuir'], false, 7],
   ['andriel', 'Andriel le Marteau', 'Guerrier', 1, [3, 6, 2, 4, 3, 2], ['Hache de guerre', 'Gilet en cuir'], false, 8],

@@ -1,7 +1,18 @@
 # CHANGELOG — Fabled Lands Helper
 
-*Une entrée par version, la plus récente en tête. Le texte de chaque entrée vient du cadrage, mot pour mot ; le dev y
-ajoute ses lignes de fichiers en sous-puces à deux espaces de retrait.*
+*Une entrée par version, la plus récente en tête ; sous chaque entrée, les fichiers touchés, en sous-puces à deux
+espaces de retrait.*
+
+## v0.3.1 — 2026-10-25
+
+- La création d'un pré-tiré : le nom et le bouton « Créer » passent en haut de l'écran, qui y revient au choix d'un personnage. L'aide à l'installation dit quoi faire quand l'icône n'apparaît pas sur l'écran d'accueil.
+  - `js/feuille.js` : l'écran du pré-tiré, le formulaire (ou la consigne) en tête, avant la légende, le lien et les cartes
+  - `js/app.js` : la page des routes du mode pré-tiré comprend le choix, d'où le retour en haut au toucher d'une carte
+  - `js/vues.js` : la ligne d'aide sur les raccourcis, à l'accueil et dans les réglages
+  - `js/version.js` : `v0.3.1` (le cache hors ligne devient `flh-v0.3.1`)
+  - `i18n/fr.json`, `i18n/en.json` : 2 clés neuves (139 clés)
+  - `tests/pretires.test.js` : un commentaire remis en termes neutres
+  - `CHANGELOG.md` : l'en-tête et cette entrée
 
 ## v0.3 — 2026-10-24
 
