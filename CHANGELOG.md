@@ -3,6 +3,20 @@
 *Une entrée par version, la plus récente en tête ; sous chaque entrée, les fichiers touchés, en sous-puces à deux
 espaces de retrait.*
 
+## v0.4 — 2026-10-25
+
+- Le bonus des objets : une possession peut porter un bonus (ou un malus) à une compétence ou à la Défense, qui entre seul dans le total ; pour chaque compétence et pour la Défense, seul le meilleur bonus d'objet compte, un malus d'objet compte toujours. Les bonus saisis à la main au nom d'un objet transporté passent sur cet objet (sauvegarde au schéma 3).
+  - `js/regles.js` : `CIBLES`, `bonusObjets` (le meilleur bonus compte, un malus toujours), les totaux avec les objets, `ajouterPossession` avec un bonus, `changerBonusObjet`
+  - `js/sauvegarde.js` : le schéma 3, la complétion des possessions en objets, le rattachement des bonus à la main depuis le schéma 1 ou 2
+  - `js/pretires.js` : les possessions des pré-tirés en objets (le Gilet en cuir à Défense +1, la Boussole de Tjell à Exploration +1)
+  - `js/feuille.js` : Possessions (la pastille du bonus, l'éditeur du bonus d'un objet, l'ajout avec un bonus) et Statistiques (les pastilles et la liste des bonus d'objets)
+  - `js/app.js` : la route `#/perso/<id>/possessions/<index>`, sans retour en haut de page
+  - `css/app.css` : la feuille de style du lot
+  - `js/version.js` : `v0.4` (le cache hors ligne devient `flh-v0.4`)
+  - `i18n/fr.json`, `i18n/en.json` : 6 clés neuves (145 clés)
+  - `tests/regles.test.js`, `tests/sauvegarde.test.js`, `tests/pretires.test.js` : 13, 10 et 2 tests neufs ; les tests des possessions en texte, du schéma 2 et des bonus à la main des pré-tirés mis au schéma 3
+  - `CHANGELOG.md` : cette entrée
+
 ## v0.3.1 — 2026-10-25
 
 - La création d'un pré-tiré : le nom et le bouton « Créer » passent en haut de l'écran, qui y revient au choix d'un personnage. L'aide à l'installation dit quoi faire quand l'icône n'apparaît pas sur l'écran d'accueil.
