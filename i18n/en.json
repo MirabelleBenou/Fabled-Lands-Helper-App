@@ -137,5 +137,11 @@
   "feuille.bourse_insuffisante": "Your money holds only {n} Shards.",
   "feuille.etiquette": "{libelle}:",
   "pretire.consigne": "Tap a character to choose it; its name and the \"Create\" button will appear here.",
-  "installation.raccourci": "If the icon does not appear on the home screen, check in the device settings that your browser is allowed to create home screen shortcuts, then try again."
+  "installation.raccourci": "If the icon does not appear on the home screen, check in the device settings that your browser is allowed to create home screen shortcuts, then try again.",
+  "feuille.bonus_objets": "Item bonuses",
+  "feuille.ne_compte_pas": "does not count: another item gives more",
+  "feuille.objet_modifier": "The item",
+  "feuille.objet_bonus": "Bonus",
+  "feuille.sans_bonus": "No bonus",
+  "feuille.enregistrer": "Save"
 }

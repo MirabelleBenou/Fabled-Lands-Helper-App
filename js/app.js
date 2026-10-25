@@ -2,6 +2,7 @@
 // Lot v0.2 — l'écoute de l'installation, le bandeau de mise à jour, l'enregistrement du service worker à jour.
 // Lot v0.3 — les routes de la création et de la fiche (js/feuille.js) ; le haut de page seulement quand la page change.
 // Lot v0.3.1 — la page du mode pré-tiré comprend le choix : toucher un personnage ramène l'écran en haut.
+// Lot v0.4 — la route de l'éditeur du bonus d'un objet, #/perso/<id>/possessions/<index>.
 import { chargerLangue, choisirLangue, traduirePage } from './i18n.js';
 import { lire } from './sauvegarde.js';
 import { ecouterInstallation, surveillerControleur } from './pwa.js';
@@ -76,7 +77,10 @@ function analyserRoute(hash) {
     }
     const rubrique = RUBRIQUES.includes(morceaux[2]) ? morceaux[2] : 'statistiques';
     const deplie = morceaux[2] === 'statistiques' && morceaux.length === 4 ? morceaux[3] : null;
-    return { vue: vueFiche, onglet: 'accueil', page: `perso/${id}/${rubrique}`, id, rubrique, deplie };
+    // Lot v0.4 — #/perso/<id>/possessions/<index> : l'objet ouvert (un entier ; la fiche vérifie qu'il est dans la
+    // liste) ; la page reste celle des Possessions, l'ouverture ne ramène pas en haut.
+    const objet = morceaux[2] === 'possessions' && morceaux.length === 4 && /^(0|[1-9][0-9]*)$/.test(morceaux[3]) ? Number(morceaux[3]) : null;
+    return { vue: vueFiche, onglet: 'accueil', page: `perso/${id}/${rubrique}`, id, rubrique, deplie, objet };
   }
   return accueil;
 }

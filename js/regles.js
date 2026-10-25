@@ -1,21 +1,47 @@
 // Lot v0.3 — les règles de calcul de la feuille d'aventure et ses bornes. Module pur : il s'importe dans Node,
 // rien n'y touche window, document ou indexedDB. Chaque modification rend un personnage neuf (une copie), ou null
 // quand la règle la refuse : l'écran n'enregistre alors rien.
+// Lot v0.4 — le bonus des objets : une possession est un objet { texte, bonus }, son bonus entre seul dans le total.
 export const COMPETENCES = ['charisme', 'combat', 'magie', 'piete', 'exploration', 'adresse'];
+
+// Lot v0.4 — les cibles d'un bonus d'objet : les six compétences, dans l'ordre de COMPETENCES, puis la Défense.
+export const CIBLES = [...COMPETENCES, 'defense'];
 
 export const MAX_POSSESSIONS = 12;
 
 const somme = (bonus) => bonus.reduce((total, b) => total + b.valeur, 0);
 
-// La valeur de la compétence : sa base actuelle et ses bonus et malus.
-export function totalCompetence(personnage, code) {
-  const competence = personnage.competences[code];
-  return competence.actuelle + somme(competence.bonus);
+// Lot v0.4 — les objets transportés dont le bonus vise `cible`, dans l'ordre des possessions :
+// { valeur, raison (le texte de l'objet), index (sa place dans possessions), compte }. Un malus compte toujours ;
+// parmi les bonus, seul le plus grand compte (à égalité, le premier). Cette règle ne vit qu'ici.
+export function bonusObjets(personnage, cible) {
+  const liste = [];
+  personnage.possessions.forEach((objet, index) => {
+    if (objet.bonus && objet.bonus.cible === cible) liste.push({ valeur: objet.bonus.valeur, raison: objet.texte, index, compte: false });
+  });
+  let meilleur = null;
+  for (const b of liste) {
+    if (b.valeur < 0) b.compte = true;
+    else if (meilleur === null || b.valeur > meilleur.valeur) meilleur = b;
+  }
+  if (meilleur !== null) meilleur.compte = true;
+  return liste;
 }
 
-// La Défense : niveau + base actuelle de Combat + bonus de Défense (les bonus de Combat n'y entrent pas).
+// Lot v0.4 — la somme des bonus d'objets qui comptent pour `cible`.
+const sommeObjets = (personnage, cible) => somme(bonusObjets(personnage, cible).filter((b) => b.compte));
+
+// La valeur de la compétence : sa base actuelle, ses bonus et malus à la main, et ceux des objets qui comptent.
+export function totalCompetence(personnage, code) {
+  const competence = personnage.competences[code];
+  return competence.actuelle + somme(competence.bonus) + sommeObjets(personnage, code);
+}
+
+// La Défense : niveau + base actuelle de Combat + bonus de Défense, à la main et d'objets (les bonus de Combat,
+// à la main comme d'objet, n'y entrent pas).
 export function defense(personnage) {
-  return personnage.niveau + personnage.competences.combat.actuelle + somme(personnage.defense.bonus);
+  return personnage.niveau + personnage.competences.combat.actuelle + somme(personnage.defense.bonus)
+    + sommeObjets(personnage, 'defense');
 }
 
 // « +n », « −n » (signe moins U+2212) ou « 0 ».
@@ -119,12 +145,36 @@ export function operationBourse(personnage, sens, montantSaisi) {
   return { issue: 'ok', personnage: nouveau };
 }
 
+// Lot v0.4 — le bonus d'un objet saisi : cible vide → { bonus: null } ; une cible de CIBLES et une valeur entière
+// non nulle → { bonus: { cible, valeur } } ; sinon null (saisie refusée).
+function bonusSaisi(cible, valeurSaisie) {
+  if (cible === '') return { bonus: null };
+  if (!CIBLES.includes(cible)) return null;
+  const valeur = entierSaisi(valeurSaisie);
+  if (valeur === null || valeur === 0) return null;
+  return { bonus: { cible, valeur } };
+}
+
 // Une possession ne s'ajoute que si son texte est non vide et qu'il y en a moins de 12 ; doublons permis.
-export function ajouterPossession(personnage, texte) {
+// Lot v0.4 — elle devient l'objet { texte, bonus } ; un bonus saisi invalide refuse l'ajout.
+export function ajouterPossession(personnage, texte, cible = '', valeur = '') {
   const propre = String(texte ?? '').trim();
   if (propre === '' || personnage.possessions.length >= MAX_POSSESSIONS) return null;
+  const saisi = bonusSaisi(cible, valeur);
+  if (saisi === null) return null;
   const nouveau = copie(personnage);
-  nouveau.possessions.push(propre);
+  nouveau.possessions.push({ texte: propre, bonus: saisi.bonus });
+  return nouveau;
+}
+
+// Lot v0.4 — le bonus de l'objet `index` change (cible vide : plus de bonus) ; son texte ne change pas.
+// Index hors de la liste ou saisie invalide → null.
+export function changerBonusObjet(personnage, index, cible, valeur) {
+  if (!Number.isInteger(index) || index < 0 || index >= personnage.possessions.length) return null;
+  const saisi = bonusSaisi(cible, valeur);
+  if (saisi === null) return null;
+  const nouveau = copie(personnage);
+  nouveau.possessions[index].bonus = saisi.bonus;
   return nouveau;
 }
 

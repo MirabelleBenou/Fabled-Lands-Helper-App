@@ -1,17 +1,22 @@
 // Lot v0.3 — la feuille d'aventure : la création (pré-tiré ou saisie libre) et la fiche d'un personnage, en trois
 // rubriques (Statistiques, Possessions, Cultes). Chaque changement s'enregistre aussitôt, puis l'écran se rend à
 // nouveau depuis le personnage enregistré. Le texte saisi ou importé n'entre jamais comme HTML.
+// Lot v0.4 — le bonus des objets : la pastille et l'éditeur du bonus de chaque possession, l'ajout avec un bonus ;
+// dans les Statistiques, les pastilles et la liste des bonus d'objets.
 import { t } from './i18n.js';
 import { LIENS } from './liens.js';
 import { PRETIRES, personnagePretire, pretireParId } from './pretires.js';
 import {
+  CIBLES,
   COMPETENCES,
   MAX_POSSESSIONS,
   ajouterBonus,
   ajouterEntree,
   ajouterPossession,
   ajouterTitre,
+  bonusObjets,
   changerBase,
+  changerBonusObjet,
   changerBourse,
   changerEndurance,
   changerEnduranceMax,
@@ -54,6 +59,8 @@ const RUBRIQUES = [
   ['cultes', () => t('feuille.cultes')],
 ];
 const DEPLIABLES = [...COMPETENCES, 'defense', 'endurance'];
+// Lot v0.4 — le nom d'une cible de bonus : la compétence, ou la Défense.
+const nomCible = (cible) => (cible === 'defense' ? t('feuille.defense') : NOM_COMPETENCE[cible]());
 
 const lienRetour = () => el('a', { classe: 'lien', href: '#/', texte: t('fiche.retour') });
 const lienExterne = (classe, test, texte) => el('a', { classe, test, href: LIENS.pretires, target: '_blank', rel: 'noopener', texte });
@@ -195,7 +202,8 @@ function montrerErreurEcriture() {
 // `transformer(personnage)` rend le personnage changé, ou null (rien à faire). Le changement s'enregistre
 // (modifie_le = maintenant), puis l'écran se rend à nouveau (sauf `rendre: false`) et le focus revient à l'élément
 // qui porte le data-test du déclencheur. Un enregistrement qui échoue laisse l'écran tel quel, avec l'erreur.
-async function changer(contexte, id, transformer, { declencheur = null, rendre = true } = {}) {
+// Lot v0.4 — `ancre` : une fois écrit, l'adresse va à cette ancre (l'écran s'y rend), au lieu de se rendre sur place.
+async function changer(contexte, id, transformer, { declencheur = null, rendre = true, ancre = null } = {}) {
   const test = declencheur?.dataset?.test;
   const travail = file.then(async () => {
     let actuel;
@@ -218,17 +226,38 @@ async function changer(contexte, id, transformer, { declencheur = null, rendre =
   file = travail.catch(() => 'echec');
   const issue = await file;
   if (issue === 'echec') montrerErreurEcriture();
+  if (issue === 'ecrit' && ancre !== null && location.hash !== ancre) {
+    contexte.naviguer(ancre);
+    return;
+  }
   if (issue === 'disparu' || (issue === 'ecrit' && rendre)) {
     await contexte.rafraichir();
     if (test) document.querySelector(`#ecran [data-test="${test}"]`)?.focus({ preventScroll: true });
   }
 }
 
-// Un bouton (ou un élément) qui, touché, applique `transformer`.
-function action(element, contexte, id, transformer) {
-  element.addEventListener('click', () => changer(contexte, id, transformer, { declencheur: element }));
+// Un bouton (ou un élément) qui, touché, applique `transformer` ; lot v0.4 — `options` : celles de changer().
+function action(element, contexte, id, transformer, options = {}) {
+  element.addEventListener('click', () => changer(contexte, id, transformer, { declencheur: element, ...options }));
   return element;
 }
+
+// Lot v0.4 — la liste de choix de la cible d'un bonus d'objet : « Sans bonus », puis chaque cible de CIBLES.
+function choixCible(test, valeur) {
+  const choix = el('select', { test, 'aria-label': t('feuille.objet_bonus') },
+    el('option', { value: '', texte: t('feuille.sans_bonus') }),
+    ...CIBLES.map((cible) => el('option', { value: cible, texte: nomCible(cible) })));
+  choix.value = valeur;
+  return choix;
+}
+
+// Lot v0.4 — le champ nombre de la valeur d'un bonus d'objet.
+const champValeurObjet = (test, valeur) => el('input', {
+  type: 'number', inputmode: 'numeric', test, value: String(valeur), 'aria-label': t('feuille.valeur'),
+});
+
+// Lot v0.4 — la pastille d'un bonus d'objet : « équipement », « malus » si la valeur est négative.
+const classePuceObjet = (valeur) => (valeur < 0 ? 'puce equipement malus' : 'puce equipement');
 
 // Un champ texte et son bouton « Ajouter » ; la touche Entrée dans le champ ajoute aussi.
 function ajoutTexte(contexte, id, testChamp, testBouton, libelle, ajouter, inactif = false) {
@@ -304,6 +333,20 @@ function editeurStat(contexte, p, cible) {
     action(base.querySelector('[data-test=base-plus]'), contexte, p.id, (q) => changerBase(q, cible, 1));
     editeur.append(base);
   }
+  // Lot v0.4 — les bonus des objets, s'il y en a : chacun mène à son objet ; celui qui ne compte pas le dit.
+  const objets = bonusObjets(p, cible);
+  if (objets.length > 0) {
+    const racine = `#/perso/${encodeURIComponent(p.id)}`;
+    editeur.append(el('p', { classe: 'petit-titre', texte: t('feuille.bonus_objets') }),
+      el('ul', { classe: 'bonus-liste', test: 'bonus-objets' }, ...objets.map((b) => {
+        const raison = el('span', { classe: 'raison', texte: b.raison });
+        if (!b.compte) raison.append(el('span', { classe: 'legende', texte: ` — ${t('feuille.ne_compte_pas')}` }));
+        return el('li', b.compte ? {} : { classe: 'ignore' },
+          el('span', { classe: b.valeur < 0 ? 'valeur malus' : 'valeur', texte: signe(b.valeur) }),
+          raison,
+          el('a', { classe: 'lien', test: 'lien-objet', href: `${racine}/possessions/${b.index}`, texte: t('feuille.objet_modifier') }));
+      })));
+  }
   const bonus = cible === 'defense' ? p.defense.bonus : p.competences[cible].bonus;
   editeur.append(el('p', { classe: 'petit-titre', texte: t('feuille.bonus_malus') }));
   if (bonus.length === 0) {
@@ -333,6 +376,12 @@ function ligneStat(contexte, p, base, deplie, cible) {
     el('span', { classe: 'nom-stat', texte: estDefense ? t('feuille.defense') : NOM_COMPETENCE[cible]() }),
     el('span', { classe: 'detail-stat' },
       el('span', { classe: 'formule', texte: formule }),
+      // Lot v0.4 — d'abord une pastille par objet (barrée s'il ne compte pas), puis les bonus à la main.
+      ...bonusObjets(p, cible).map((b) => el('span', {
+        classe: b.compte ? classePuceObjet(b.valeur) : `${classePuceObjet(b.valeur)} ignore`,
+        test: 'puce-objet',
+        texte: `${signe(b.valeur)} ${b.raison}`,
+      })),
       ...bonus.map((b) => el('span', { classe: b.valeur < 0 ? 'puce malus' : 'puce', texte: `${signe(b.valeur)} ${b.raison}` }))),
     el('span', {
       classe: 'total',
@@ -429,8 +478,43 @@ function blocBourse(contexte, p) {
   return section;
 }
 
-function rubriquePossessions(contexte, p) {
+// Lot v0.4 — l'éditeur du bonus de l'objet `index` : la cible, la valeur, « Enregistrer », puis « Fermer ».
+// Écrit, l'adresse revient aux Possessions ; refusé, rien n'est enregistré et l'éditeur reste ouvert.
+function editeurObjet(contexte, p, base, index) {
+  const { bonus } = p.possessions[index];
+  const cible = choixCible('objet-cible', bonus === null ? '' : bonus.cible);
+  const valeur = champValeurObjet('objet-valeur', bonus === null ? 1 : bonus.valeur);
+  const enregistrer = el('button', { classe: 'bouton', type: 'button', test: 'objet-enregistrer', texte: t('feuille.enregistrer') });
+  action(enregistrer, contexte, p.id, (q) => changerBonusObjet(q, index, cible.value, valeur.value), { ancre: base });
+  return el('div', { classe: 'editeur editeur-objet', test: 'editeur-objet' },
+    el('div', { classe: 'ajout-objet' }, cible, valeur, enregistrer),
+    el('a', { classe: 'lien', href: base, texte: t('feuille.fermer') }));
+}
+
+// Lot v0.4 — l'ajout d'une possession : le texte, la cible et la valeur du bonus, « Ajouter » (ou Entrée dans le
+// champ texte) ; tout est désactivé à 12 possessions.
+function ajoutPossession(contexte, p, plein) {
+  const champ = el('input', {
+    type: 'text', test: 'possession-champ', placeholder: t('feuille.possession_ajouter'), 'aria-label': t('feuille.possession_ajouter'),
+  });
+  const cible = choixCible('possession-cible', '');
+  const valeur = champValeurObjet('possession-valeur', 1);
+  const bouton = el('button', { classe: 'bouton', type: 'button', test: 'possession-ajouter', texte: t('feuille.ajouter') });
+  if (plein) for (const element of [champ, cible, valeur, bouton]) element.setAttribute('disabled', '');
+  const ajout = (declencheur) => changer(contexte, p.id, (q) => ajouterPossession(q, champ.value, cible.value, valeur.value), { declencheur });
+  bouton.addEventListener('click', () => ajout(bouton));
+  champ.addEventListener('keydown', (evenement) => {
+    if (evenement.key !== 'Enter') return;
+    evenement.preventDefault();
+    ajout(champ);
+  });
+  return el('div', { classe: 'ajout-possession' }, champ, cible, valeur, bouton);
+}
+
+// Lot v0.4 — `ouvert` : l'index de l'objet dont l'éditeur est ouvert (null : aucun, ou un index hors de la liste).
+function rubriquePossessions(contexte, p, base, ouvert) {
   const plein = p.possessions.length >= MAX_POSSESSIONS;
+  const enEdition = Number.isInteger(ouvert) && ouvert < p.possessions.length ? ouvert : null;
   const noeuds = [
     blocBourse(contexte, p),
     el('h2', { classe: 'rubrique' }, t('feuille.transportees'),
@@ -439,11 +523,24 @@ function rubriquePossessions(contexte, p) {
   if (p.possessions.length === 0) {
     noeuds.push(el('p', { classe: 'legende', texte: t('feuille.possessions_vide') }));
   } else {
-    noeuds.push(el('ol', { classe: 'possessions', test: 'possessions' }, ...p.possessions.map((objet, index) => el('li', {},
-      el('span', { classe: 'objet', texte: objet }),
-      action(boutonRetirer('lien', t('feuille.retirer'), objet), contexte, p.id, (q) => retirerDeListe(q, 'possessions', index))))));
+    noeuds.push(el('ol', { classe: 'possessions', test: 'possessions' }, ...p.possessions.map((objet, index) => {
+      const nom = el('span', { classe: 'objet', texte: objet.texte });
+      if (objet.bonus !== null) {
+        nom.append(' ', el('span', {
+          classe: classePuceObjet(objet.bonus.valeur), test: 'bonus-objet', texte: `${nomCible(objet.bonus.cible)} ${signe(objet.bonus.valeur)}`,
+        }));
+      }
+      const ouverte = index === enEdition;
+      const ligne = el('li', ouverte ? { classe: 'ouverte' } : {},
+        nom,
+        el('a', { classe: 'lien', test: 'objet-bonus', href: ouverte ? base : `${base}/${index}`, texte: t('feuille.objet_bonus') }),
+        action(boutonRetirer('lien', t('feuille.retirer'), objet.texte), contexte, p.id, (q) => retirerDeListe(q, 'possessions', index),
+          { ancre: enEdition === null ? null : base }));
+      if (ouverte) ligne.append(editeurObjet(contexte, p, base, index));
+      return ligne;
+    })));
   }
-  noeuds.push(ajoutTexte(contexte, p.id, 'possession-champ', 'possession-ajouter', t('feuille.possession_ajouter'), ajouterPossession, plein));
+  noeuds.push(ajoutPossession(contexte, p, plein));
   if (plein) noeuds.push(el('p', { classe: 'legende', test: 'plein', texte: t('feuille.possessions_plein') }));
   return noeuds;
 }
@@ -509,7 +606,8 @@ const rubriqueCultes = (contexte, p) => CULTES.map((culte) => blocCulte(contexte
 
 // ---- La fiche ------------------------------------------------------------------------------------------
 
-// La fiche : #/perso/<id>[/<rubrique>[/<déplié>]] ; route = { id, rubrique, deplie }.
+// La fiche : #/perso/<id>[/<rubrique>[/<déplié>]] ; route = { id, rubrique, deplie, objet } (lot v0.4 : `objet`,
+// l'index de l'objet ouvert des Possessions).
 export async function vueFiche(contexte, route) {
   await file;
   const p = await lirePersonnage(route.id).catch(() => null);
@@ -525,7 +623,7 @@ export async function vueFiche(contexte, route) {
     return lien;
   }));
   let contenu;
-  if (route.rubrique === 'possessions') contenu = rubriquePossessions(contexte, p);
+  if (route.rubrique === 'possessions') contenu = rubriquePossessions(contexte, p, `${racine}/possessions`, route.objet);
   else if (route.rubrique === 'cultes') contenu = rubriqueCultes(contexte, p);
   else {
     const deplie = DEPLIABLES.includes(route.deplie) ? route.deplie : null;

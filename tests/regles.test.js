@@ -2,13 +2,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  CIBLES,
   COMPETENCES,
   MAX_POSSESSIONS,
   ajouterBonus,
   ajouterEntree,
   ajouterPossession,
   ajouterTitre,
+  bonusObjets,
   changerBase,
+  changerBonusObjet,
   changerBourse,
   changerEndurance,
   changerEnduranceMax,
@@ -170,7 +173,7 @@ test('Bourse : dépenser plus que la Bourse est refusé', () => {
 test('Possessions : s\'ajoutent à la suite, doublons permis, texte vide refusé', () => {
   let p = ajouterPossession(perso(), ' Corde ');
   p = ajouterPossession(p, 'Corde');
-  assert.deepEqual(p.possessions, ['Corde', 'Corde']);
+  assert.deepEqual(p.possessions, [{ texte: 'Corde', bonus: null }, { texte: 'Corde', bonus: null }]);
   assert.equal(ajouterPossession(perso(), '   '), null);
 });
 
@@ -180,8 +183,8 @@ test('Possessions : à 12, plus rien ne s\'ajoute ; en retirer une libère une p
   assert.equal(p.possessions.length, 12);
   assert.equal(ajouterPossession(p, 'De trop'), null);
   const moins = retirerDeListe(p, 'possessions', 0);
-  assert.equal(moins.possessions[0], 'Objet 2');
-  assert.equal(ajouterPossession(moins, 'Nouveau').possessions[11], 'Nouveau');
+  assert.equal(moins.possessions[0].texte, 'Objet 2');
+  assert.equal(ajouterPossession(moins, 'Nouveau').possessions[11].texte, 'Nouveau');
 });
 
 test('Titres : s\'ajoutent si non vides, se retirent', () => {
@@ -231,4 +234,99 @@ test('entierSaisi : un entier, ou null', () => {
   assert.equal(entierSaisi(''), null);
   assert.equal(entierSaisi('2.5'), null);
   assert.equal(entierSaisi('x'), null);
+});
+
+// ---- Lot v0.4 — le bonus des objets -------------------------------------------------------------------------
+
+// Le personnage d'essai, avec ces possessions : [texte, cible, valeur] ou [texte] (sans bonus).
+function avecObjets(...objets) {
+  const p = perso();
+  p.possessions = objets.map(([texte, cible, valeur]) => ({ texte, bonus: cible === undefined ? null : { cible, valeur } }));
+  return p;
+}
+
+test('CIBLES : les six compétences dans l\'ordre de COMPETENCES, puis la Défense', () => {
+  assert.deepEqual(CIBLES, [...COMPETENCES, 'defense']);
+});
+
+test('bonusObjets : un seul bonus compte, avec son texte et sa place', () => {
+  const p = avecObjets(['Corde'], ['Épée', 'combat', 1]);
+  assert.deepEqual(bonusObjets(p, 'combat'), [{ valeur: 1, raison: 'Épée', index: 1, compte: true }]);
+});
+
+test('bonusObjets : deux bonus, seul le plus grand compte', () => {
+  const p = avecObjets(['Lance', 'combat', 1], ['Épée enchantée', 'combat', 2]);
+  assert.deepEqual(bonusObjets(p, 'combat'), [
+    { valeur: 1, raison: 'Lance', index: 0, compte: false },
+    { valeur: 2, raison: 'Épée enchantée', index: 1, compte: true },
+  ]);
+});
+
+test('bonusObjets : à égalité, le premier dans la liste compte', () => {
+  const p = avecObjets(['Épée', 'combat', 2], ['Hache', 'combat', 2]);
+  assert.deepEqual(bonusObjets(p, 'combat').map((b) => b.compte), [true, false]);
+});
+
+test('bonusObjets : un malus compte toujours, à côté du meilleur bonus', () => {
+  const p = avecObjets(['Anneau terni', 'charisme', -1], ['Broche', 'charisme', 1], ['Collier', 'charisme', 2], ['Masque', 'charisme', -2]);
+  assert.deepEqual(bonusObjets(p, 'charisme').map((b) => [b.raison, b.compte]),
+    [['Anneau terni', true], ['Broche', false], ['Collier', true], ['Masque', true]]);
+});
+
+test('bonusObjets : un objet d\'une autre cible, ou sans bonus, n\'entre pas', () => {
+  const p = avecObjets(['Gilet en cuir', 'defense', 1], ['Corde'], ['Boussole', 'exploration', 1]);
+  assert.deepEqual(bonusObjets(p, 'combat'), []);
+  assert.deepEqual(bonusObjets(p, 'defense').map((b) => b.raison), ['Gilet en cuir']);
+  assert.deepEqual(bonusObjets(perso(), 'defense'), []);
+});
+
+test('totalCompetence avec objets : base + bonus à la main + objets qui comptent', () => {
+  const p = avecObjets(['Lance', 'combat', 1], ['Épée', 'combat', 3], ['Bracelet maudit', 'combat', -1]);
+  p.competences.combat.bonus = [{ valeur: 1, raison: 'Bénédiction' }];
+  assert.equal(totalCompetence(p, 'combat'), 5 + 1 + 3 - 1);
+  assert.equal(totalCompetence(p, 'magie'), 3);
+});
+
+test('defense avec objets ; un bonus d\'objet de Combat n\'entre pas dans la Défense', () => {
+  const p = avecObjets(['Épée', 'combat', 4], ['Gilet en cuir', 'defense', 1], ['Cotte de mailles', 'defense', 3]);
+  p.defense.bonus = [{ valeur: -1, raison: 'Fatigue' }];
+  assert.equal(totalCompetence(p, 'combat'), 9);
+  assert.equal(defense(p), 2 + 5 - 1 + 3);
+});
+
+test('ajouterPossession avec un bonus valide ; cible vide : sans bonus', () => {
+  assert.deepEqual(ajouterPossession(perso(), ' Épée enchantée ', 'combat', '2').possessions,
+    [{ texte: 'Épée enchantée', bonus: { cible: 'combat', valeur: 2 } }]);
+  assert.deepEqual(ajouterPossession(perso(), 'Gilet', 'defense', '-1').possessions, [{ texte: 'Gilet', bonus: { cible: 'defense', valeur: -1 } }]);
+  assert.deepEqual(ajouterPossession(perso(), 'Corde', '', 'n\'importe quoi').possessions, [{ texte: 'Corde', bonus: null }]);
+});
+
+test('ajouterPossession : cible inconnue, valeur 0, non entière ou vide → rien ne s\'ajoute', () => {
+  for (const [cible, valeur] of [['chance', '1'], ['combat', '0'], ['combat', '1.5'], ['combat', 'abc'], ['combat', '']]) {
+    assert.equal(ajouterPossession(perso(), 'Épée', cible, valeur), null, `${cible} / ${valeur}`);
+  }
+});
+
+test('changerBonusObjet : changer le bonus, le retirer (cible vide) ; le texte ne change pas', () => {
+  const p = avecObjets(['Corde'], ['Lance', 'combat', 1]);
+  assert.deepEqual(changerBonusObjet(p, 1, 'defense', '2').possessions[1], { texte: 'Lance', bonus: { cible: 'defense', valeur: 2 } });
+  assert.deepEqual(changerBonusObjet(p, 1, '', '1').possessions[1], { texte: 'Lance', bonus: null });
+  assert.deepEqual(changerBonusObjet(p, 0, 'adresse', '-1').possessions[0], { texte: 'Corde', bonus: { cible: 'adresse', valeur: -1 } });
+  assert.deepEqual(p.possessions[1], { texte: 'Lance', bonus: { cible: 'combat', valeur: 1 } });
+});
+
+test('changerBonusObjet : index hors de la liste ou saisie invalide → null', () => {
+  const p = avecObjets(['Lance', 'combat', 1]);
+  for (const index of [-1, 1, 7]) assert.equal(changerBonusObjet(p, index, 'combat', '2'), null, String(index));
+  for (const [cible, valeur] of [['chance', '1'], ['combat', '0'], ['combat', '2.5'], ['combat', '']]) {
+    assert.equal(changerBonusObjet(p, 0, cible, valeur), null, `${cible} / ${valeur}`);
+  }
+});
+
+test('retirer un objet retire son bonus du total', () => {
+  const p = avecObjets(['Lance', 'combat', 1], ['Épée enchantée', 'combat', 2]);
+  assert.equal(totalCompetence(p, 'combat'), 7);
+  const sans = retirerDeListe(p, 'possessions', 1);
+  assert.deepEqual(sans.possessions, [{ texte: 'Lance', bonus: { cible: 'combat', valeur: 1 } }]);
+  assert.equal(totalCompetence(sans, 'combat'), 6);
 });

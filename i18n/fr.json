@@ -137,5 +137,11 @@
   "feuille.bourse_insuffisante": "La bourse ne contient que {n} chardes.",
   "feuille.etiquette": "{libelle} :",
   "pretire.consigne": "Touchez un personnage pour le choisir ; son nom et le bouton « Créer » apparaîtront ici.",
-  "installation.raccourci": "Si l'icône n'apparaît pas sur l'écran d'accueil, vérifiez dans les paramètres de l'appareil que votre navigateur a l'autorisation de créer des raccourcis sur l'écran d'accueil, puis recommencez."
+  "installation.raccourci": "Si l'icône n'apparaît pas sur l'écran d'accueil, vérifiez dans les paramètres de l'appareil que votre navigateur a l'autorisation de créer des raccourcis sur l'écran d'accueil, puis recommencez.",
+  "feuille.bonus_objets": "Bonus des objets",
+  "feuille.ne_compte_pas": "ne compte pas : un autre objet donne plus",
+  "feuille.objet_modifier": "L'objet",
+  "feuille.objet_bonus": "Bonus",
+  "feuille.sans_bonus": "Sans bonus",
+  "feuille.enregistrer": "Enregistrer"
 }

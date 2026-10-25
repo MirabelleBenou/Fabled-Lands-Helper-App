@@ -2,10 +2,12 @@
 // personnage neuf. Ce module s'importe dans Node : rien n'y touche window, document ou indexedDB.
 // Lot v0.3 — le schéma 2 : la feuille d'aventure, sa complétion (aussi celle d'un personnage lu du stockage)
 // et la migration depuis le schéma 1.
-import { COMPETENCES } from './regles.js';
+// Lot v0.4 — le schéma 3 : une possession devient un objet { texte, bonus } ; les bonus saisis à la main au nom
+// d'un objet transporté passent sur cet objet (le rattachement, depuis le schéma 1 ou 2 seulement).
+import { CIBLES, COMPETENCES } from './regles.js';
 
 export const FORMAT = 'fabled-lands-helper';
-export const SCHEMA = 2;
+export const SCHEMA = 3;
 
 const EPOQUE_ZERO = '1970-01-01T00:00:00.000Z';
 
@@ -50,6 +52,43 @@ function completerCompetences(valeur) {
 }
 
 const completerTextes = (valeur) => (Array.isArray(valeur) ? valeur.filter(estChaineNonVide) : []);
+
+// Lot v0.4 — le bonus d'un objet : gardé s'il vise une cible de CIBLES avec une valeur entière non nulle (seuls
+// `cible` et `valeur` restent), sinon null.
+function completerBonusObjet(valeur) {
+  if (!estObjet(valeur) || !CIBLES.includes(valeur.cible) || !Number.isInteger(valeur.valeur) || valeur.valeur === 0) return null;
+  return { cible: valeur.cible, valeur: valeur.valeur };
+}
+
+// Lot v0.4 — les possessions au schéma 3 : une chaîne non vide devient { texte, bonus: null } ; un objet au texte non
+// vide est gardé (ses champs inconnus aussi), son bonus complété ; toute autre entrée est retirée.
+function completerPossessions(valeur) {
+  if (!Array.isArray(valeur)) return [];
+  const objets = [];
+  for (const entree of valeur) {
+    if (estChaineNonVide(entree)) objets.push({ texte: entree, bonus: null });
+    else if (estObjet(entree) && estChaineNonVide(entree.texte)) objets.push({ ...entree, bonus: completerBonusObjet(entree.bonus) });
+  }
+  return objets;
+}
+
+const nomCompare = (texte) => texte.trim().toLocaleLowerCase('fr');
+
+// Lot v0.4 — le rattachement : pour chaque cible dans l'ordre de CIBLES, chaque bonus à la main (de la fin vers le
+// début de sa liste) dont la raison égale le texte d'un objet transporté sans bonus (bords retirés, en minuscules)
+// passe sur le premier de ces objets et quitte la liste à la main.
+function rattacher(personnage) {
+  for (const cible of CIBLES) {
+    const bonus = cible === 'defense' ? personnage.defense.bonus : personnage.competences[cible].bonus;
+    for (let i = bonus.length - 1; i >= 0; i -= 1) {
+      const raison = nomCompare(bonus[i].raison);
+      const objet = personnage.possessions.find((o) => o.bonus === null && nomCompare(o.texte) === raison);
+      if (objet === undefined) continue;
+      objet.bonus = { cible, valeur: bonus[i].valeur };
+      bonus.splice(i, 1);
+    }
+  }
+}
 const texteOuVide = (valeur) => (typeof valeur === 'string' ? valeur : '');
 const entierOuNul = (valeur) => (Number.isInteger(valeur) ? valeur : null);
 
@@ -66,9 +105,9 @@ const completerResurrection = (e) => ({
   section: entierOuNul(e.section),
 });
 
-// Un personnage lu (d'un fichier importé ou du stockage) : complété des valeurs par défaut manquantes, au schéma 2,
-// ses champs inconnus conservés tels quels ; une copie qui ne partage rien avec `brut`. Lève une exception si le
-// personnage n'a pas d'id ou pas de nom.
+// Un personnage lu (d'un fichier importé ou du stockage) : complété des valeurs par défaut manquantes, au schéma 3
+// (lot v0.4), ses champs inconnus conservés tels quels ; une copie qui ne partage rien avec `brut`. Lève une
+// exception si le personnage n'a pas d'id ou pas de nom.
 export function completerPersonnage(brut, reference = EPOQUE_ZERO) {
   if (!estObjet(brut) || !estChaineNonVide(brut.id) || !estChaineNonVide(brut.nom)) {
     throw new Error('personnage illisible');
@@ -85,7 +124,10 @@ export function completerPersonnage(brut, reference = EPOQUE_ZERO) {
     ? { ...personnage.defense, bonus: completerBonus(personnage.defense.bonus) }
     : { bonus: [] };
   if (!estPositif(personnage.bourse)) personnage.bourse = 0;
-  personnage.possessions = completerTextes(personnage.possessions);
+  // Lot v0.4 — des possessions en texte (schéma 1 ou 2) : leurs bonus à la main se rattachent aux objets.
+  const ancien = Array.isArray(personnage.possessions) && personnage.possessions.some((entree) => typeof entree === 'string');
+  personnage.possessions = completerPossessions(personnage.possessions);
+  if (ancien) rattacher(personnage);
   personnage.titres = completerTextes(personnage.titres);
   personnage.benedictions = completerEntrees(personnage.benedictions, completerCulte);
   personnage.maledictions = completerEntrees(personnage.maledictions, completerCulte);
@@ -95,7 +137,7 @@ export function completerPersonnage(brut, reference = EPOQUE_ZERO) {
   return personnage;
 }
 
-// Rend { schema: SCHEMA, personnages } à partir de l'objet JSON d'un fichier exporté (schéma 1 ou 2),
+// Rend { schema: SCHEMA, personnages } à partir de l'objet JSON d'un fichier exporté (schéma 1, 2 ou 3),
 // ou lève une exception si le fichier est illisible (code « SCHEMA_RECENT » s'il vient d'un schéma plus récent).
 export function lire(objet) {
   if (!estObjet(objet)) throw new Error('sauvegarde illisible');

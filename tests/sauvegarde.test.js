@@ -1,8 +1,11 @@
 // Lot v0.1 — tests de la sauvegarde : lire(), l'export, le personnage neuf.
 // Lot v0.3 — le schéma 2 : les tests du schéma 1 adaptés, la migration, la complétion de chaque champ neuf.
+// Lot v0.4 — le schéma 3 : les tests du schéma 2 mis au schéma 3 (possessions en objets), la complétion des objets
+// et le rattachement des bonus à la main.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { SCHEMA, completerPersonnage, construireExport, lire, nomFichierExport, personnageNeuf } from '../js/sauvegarde.js';
+import { defense } from '../js/regles.js';
 
 // Lot v0.3 — la feuille aux valeurs neutres du schéma 2 (ce que reçoit un personnage du schéma 1).
 const FEUILLE_NEUTRE = {
@@ -26,20 +29,20 @@ const FEUILLE_NEUTRE = {
   pretire: null,
 };
 
-// Un personnage complet du schéma 2.
+// Un personnage complet du schéma 3 (lot v0.4 : les bonus de la Lance et du Gilet sont sur les objets).
 const feuilleComplete = () => ({
   endurance: { max: 9, actuelle: 6 },
   competences: {
     charisme: { initiale: 2, actuelle: 2, bonus: [{ valeur: -1, raison: 'Cicatrice' }] },
-    combat: { initiale: 5, actuelle: 6, bonus: [{ valeur: 1, raison: 'Lance' }] },
+    combat: { initiale: 5, actuelle: 6, bonus: [] },
     magie: { initiale: 2, actuelle: 2, bonus: [] },
     piete: { initiale: 3, actuelle: 3, bonus: [] },
     exploration: { initiale: 6, actuelle: 6, bonus: [] },
     adresse: { initiale: 4, actuelle: 4, bonus: [] },
   },
-  defense: { bonus: [{ valeur: 1, raison: 'Gilet en cuir' }] },
+  defense: { bonus: [] },
   bourse: 41,
-  possessions: ['Lance', 'Gilet en cuir'],
+  possessions: [{ texte: 'Lance', bonus: { cible: 'combat', valeur: 1 } }, { texte: 'Gilet en cuir', bonus: { cible: 'defense', valeur: 1 } }],
   titres: ['Ami des Rangers'],
   benedictions: [{ origine: 'Alvir', consequences: 'Relance' }],
   maledictions: [{ origine: '', consequences: 'Fièvre' }],
@@ -50,7 +53,7 @@ const feuilleComplete = () => ({
 
 const complet = () => ({
   format: 'fabled-lands-helper',
-  schema: 2,
+  schema: 3,
   exporte_le: '2026-10-23T14:00:00.000Z',
   personnages: [{
     id: 'a',
@@ -157,12 +160,12 @@ test('lire conserve les champs inconnus, au niveau du personnage comme plus bas'
   assert.deepEqual(fichier.personnages[0].sac, { objets: ['corde'] });
 });
 
-test('construireExport écrit le fichier du schéma 2, et lire le relit', () => {
+test('construireExport écrit le fichier du schéma 3, et lire le relit', () => {
   const personnages = lire(complet()).personnages;
   const fichier = construireExport(personnages, new Date('2026-10-24T08:00:00.000Z'));
   assert.deepEqual(Object.keys(fichier), ['format', 'schema', 'exporte_le', 'personnages']);
   assert.equal(fichier.format, 'fabled-lands-helper');
-  assert.equal(fichier.schema, 2);
+  assert.equal(fichier.schema, 3);
   assert.equal(fichier.exporte_le, '2026-10-24T08:00:00.000Z');
   assert.deepEqual(lire(JSON.parse(JSON.stringify(fichier))).personnages, personnages);
 });
@@ -199,8 +202,8 @@ function relu(champ, valeur) {
   return lire(fichier).personnages[0];
 }
 
-test('SCHEMA vaut 2', () => {
-  assert.equal(SCHEMA, 2);
+test('SCHEMA vaut 3', () => {
+  assert.equal(SCHEMA, 3);
 });
 
 test('la migration d\'un personnage du schéma 1 : tout gardé, la feuille aux valeurs neutres', () => {
@@ -209,11 +212,11 @@ test('la migration d\'un personnage du schéma 1 : tout gardé, la feuille aux v
     section_en_cours: { livre: 1, section: 1 }, cree_le: '2026-10-23T13:00:00.000Z', modifie_le: '2026-10-23T13:10:00.000Z',
   };
   const donnees = lire({ format: 'fabled-lands-helper', schema: 1, exporte_le: '2026-10-23T14:00:00.000Z', personnages: [ancien] });
-  assert.equal(donnees.schema, 2);
+  assert.equal(donnees.schema, 3);
   assert.deepEqual(donnees.personnages[0], { ...ancien, ...FEUILLE_NEUTRE });
 });
 
-test('un personnage complet du schéma 2 est relu sans changer', () => {
+test('un personnage complet du schéma 3 est relu sans changer', () => {
   const fichier = complet();
   assert.deepEqual(lire(fichier).personnages, fichier.personnages);
   assert.deepEqual(lire(JSON.parse(JSON.stringify(fichier))).personnages, fichier.personnages);
@@ -278,11 +281,12 @@ test('bourse invalide : 0', () => {
 test('possessions invalides : [] ; une entrée invalide est retirée', () => {
   assert.deepEqual(relu('possessions', undefined).possessions, []);
   assert.deepEqual(relu('possessions', 'Corde').possessions, []);
-  assert.deepEqual(relu('possessions', ['Corde', '', 3, null, 'Corde']).possessions, ['Corde', 'Corde']);
+  assert.deepEqual(relu('possessions', ['Corde', '', 3, null, 'Corde']).possessions,
+    [{ texte: 'Corde', bonus: null }, { texte: 'Corde', bonus: null }]);
 });
 
 test('possessions : plus de 12 entrées sont conservées', () => {
-  const quinze = Array.from({ length: 15 }, (_, i) => `Objet ${i + 1}`);
+  const quinze = Array.from({ length: 15 }, (_, i) => ({ texte: `Objet ${i + 1}`, bonus: null }));
   assert.deepEqual(relu('possessions', quinze).possessions, quinze);
 });
 
@@ -329,12 +333,12 @@ test('un champ inconnu est conservé à côté des champs neufs, au personnage c
   assert.deepEqual(lu.codes, ['A']);
   assert.equal(lu.endurance.note, 'blessé');
   assert.equal(lu.benedictions[0].duree, 3);
-  assert.deepEqual(lu.possessions, ['Lance', 'Gilet en cuir']);
+  assert.deepEqual(lu.possessions, feuilleComplete().possessions);
   assert.equal(lu.bourse, 41);
 });
 
-test('schema: 3 lève SCHEMA_RECENT', () => {
-  assert.throws(() => lire({ ...complet(), schema: 3 }), (erreur) => erreur.code === 'SCHEMA_RECENT');
+test('schema: 4 lève SCHEMA_RECENT', () => {
+  assert.throws(() => lire({ ...complet(), schema: 4 }), (erreur) => erreur.code === 'SCHEMA_RECENT');
 });
 
 test('completerPersonnage (le stockage) : même complétion, refuse sans id ou sans nom, ne partage rien', () => {
@@ -346,4 +350,124 @@ test('completerPersonnage (le stockage) : même complétion, refuse sans id ou s
   assert.deepEqual(ancien, { id: 'b', nom: 'Brunehaut', niveau: 2 });
   assert.throws(() => completerPersonnage({ nom: 'Sans id' }));
   assert.throws(() => completerPersonnage({ id: 'x' }));
+});
+
+// ---- Lot v0.4 — le schéma 3 : la complétion des objets, le rattachement --------------------------------------
+
+// Un fichier du schéma `schema` avec un personnage : `champs` remplace ceux de la feuille complète.
+function fichierAvec(schema, champs) {
+  const fichier = complet();
+  fichier.schema = schema;
+  Object.assign(fichier.personnages[0], champs);
+  return fichier;
+}
+
+// Des bonus à la main : [valeur, raison] → { valeur, raison }.
+const aLaMain = (...bonus) => bonus.map(([valeur, raison]) => ({ valeur, raison }));
+
+test('complétion : une chaîne devient un objet sans bonus', () => {
+  const lu = lire(fichierAvec(3, { possessions: ['Corde', { texte: 'Lanterne', bonus: null }] })).personnages[0];
+  assert.deepEqual(lu.possessions, [{ texte: 'Corde', bonus: null }, { texte: 'Lanterne', bonus: null }]);
+});
+
+test('complétion : un bonus d\'objet invalide devient null ; un bonus valide perd ses champs inconnus', () => {
+  const invalides = [
+    undefined, 'combat', 3, [], { cible: 'chance', valeur: 1 }, { cible: 'combat', valeur: 0 }, { cible: 'combat', valeur: 1.5 },
+    { cible: 'combat', valeur: '1' }, { valeur: 1 }, { cible: 'Combat', valeur: 1 },
+  ];
+  const possessions = invalides.map((bonus, i) => ({ texte: `Objet ${i}`, bonus }));
+  possessions.push({ texte: 'Bouclier', bonus: { cible: 'defense', valeur: 2, note: 'rouillé' } });
+  const lu = lire(fichierAvec(3, { possessions })).personnages[0].possessions;
+  assert.deepEqual(lu.slice(0, invalides.length).map((o) => o.bonus), invalides.map(() => null));
+  assert.deepEqual(lu.at(-1), { texte: 'Bouclier', bonus: { cible: 'defense', valeur: 2 } });
+});
+
+test('complétion : un champ inconnu d\'un objet est conservé ; un objet sans texte est retiré', () => {
+  const lu = lire(fichierAvec(3, {
+    possessions: [{ texte: 'Épée', bonus: { cible: 'combat', valeur: 1 }, poids: 2 }, { texte: '' }, { bonus: null }, { texte: 4 }, ['Corde']],
+  })).personnages[0];
+  assert.deepEqual(lu.possessions, [{ texte: 'Épée', bonus: { cible: 'combat', valeur: 1 }, poids: 2 }]);
+});
+
+test('rattachement : le Gilet en cuir à la main d\'un pré-tiré de la v0.3 passe sur l\'objet, les totaux ne bougent pas', () => {
+  const fichier = fichierAvec(2, {
+    competences: { ...feuilleComplete().competences, combat: { initiale: 5, actuelle: 5, bonus: [] } },
+    defense: { bonus: aLaMain([1, 'Gilet en cuir']) },
+    possessions: ['Lance', 'Gilet en cuir'],
+  });
+  const lu = lire(fichier).personnages[0];
+  assert.deepEqual(lu.possessions, [{ texte: 'Lance', bonus: null }, { texte: 'Gilet en cuir', bonus: { cible: 'defense', valeur: 1 } }]);
+  assert.deepEqual(lu.defense.bonus, []);
+  assert.equal(defense(lu), 2 + 5 + 1);
+});
+
+test('rattachement : la casse et les espaces de bord n\'empêchent pas', () => {
+  const lu = lire(fichierAvec(2, {
+    competences: { ...feuilleComplete().competences, combat: { initiale: 5, actuelle: 5, bonus: aLaMain([2, '  ÉPÉE de Marlock ']) } },
+    defense: { bonus: [] },
+    possessions: [' épée DE marlock'],
+  })).personnages[0];
+  assert.deepEqual(lu.possessions, [{ texte: ' épée DE marlock', bonus: { cible: 'combat', valeur: 2 } }]);
+  assert.deepEqual(lu.competences.combat.bonus, []);
+});
+
+test('rattachement : un bonus sans objet du même nom reste à la main', () => {
+  const lu = lire(fichierAvec(2, {
+    competences: { ...feuilleComplete().competences, charisme: { initiale: 2, actuelle: 2, bonus: aLaMain([-1, 'Cicatrice']) } },
+    defense: { bonus: aLaMain([1, 'Gilet de cuir']) },
+    possessions: ['Gilet en cuir'],
+  })).personnages[0];
+  assert.deepEqual(lu.possessions, [{ texte: 'Gilet en cuir', bonus: null }]);
+  assert.deepEqual(lu.competences.charisme.bonus, aLaMain([-1, 'Cicatrice']));
+  assert.deepEqual(lu.defense.bonus, aLaMain([1, 'Gilet de cuir']));
+});
+
+test('rattachement : les cibles dans l\'ordre de CIBLES, les bonus de la fin vers le début, le premier objet sans bonus', () => {
+  const competences = feuilleComplete().competences;
+  competences.charisme.bonus = [];
+  competences.combat.bonus = aLaMain([1, 'Épée'], [2, 'Épée'], [3, 'Épée']);
+  const lu = lire(fichierAvec(2, {
+    competences,
+    defense: { bonus: aLaMain([4, 'Épée'], [1, 'Bouclier']) },
+    possessions: ['Épée', 'Corde', 'Épée', { texte: 'Bouclier', bonus: { cible: 'defense', valeur: 2 } }, 'Bouclier'],
+  })).personnages[0];
+  assert.deepEqual(lu.possessions.map((o) => o.bonus), [
+    { cible: 'combat', valeur: 3 }, null, { cible: 'combat', valeur: 2 }, { cible: 'defense', valeur: 2 }, { cible: 'defense', valeur: 1 },
+  ]);
+  assert.deepEqual(lu.competences.combat.bonus, aLaMain([1, 'Épée']));
+  assert.deepEqual(lu.defense.bonus, aLaMain([4, 'Épée']));
+});
+
+test('rattachement : un personnage du schéma 3 n\'est pas rattaché', () => {
+  const champs = {
+    defense: { bonus: aLaMain([1, 'Gilet en cuir']) },
+    possessions: [{ texte: 'Gilet en cuir', bonus: null }],
+  };
+  const lu = lire(fichierAvec(3, champs)).personnages[0];
+  assert.deepEqual(lu.possessions, champs.possessions);
+  assert.deepEqual(lu.defense.bonus, champs.defense.bonus);
+});
+
+test('rattachement : aussi à la lecture du stockage (completerPersonnage), le personnage d\'origine ne change pas', () => {
+  const brut = { id: 'l', nom: 'Liana', defense: { bonus: aLaMain([1, 'Gilet en cuir']) }, possessions: ['Lance', 'Gilet en cuir'] };
+  const avant = structuredClone(brut);
+  const lu = completerPersonnage(brut);
+  assert.deepEqual(lu.possessions[1], { texte: 'Gilet en cuir', bonus: { cible: 'defense', valeur: 1 } });
+  assert.deepEqual(lu.defense.bonus, []);
+  assert.deepEqual(brut, avant);
+});
+
+test('lire un fichier du schéma 3 ne change rien ; le même au schéma 4 lève SCHEMA_RECENT', () => {
+  const fichier = fichierAvec(3, {
+    possessions: [
+      { texte: 'Lance de qualité', bonus: { cible: 'combat', valeur: 1 } },
+      { texte: 'Corde', bonus: null },
+      { texte: 'Anneau terni', bonus: { cible: 'charisme', valeur: -1 } },
+    ],
+  });
+  const donnees = lire(JSON.parse(JSON.stringify(fichier)));
+  assert.equal(donnees.schema, 3);
+  assert.deepEqual(donnees.personnages, fichier.personnages);
+  assert.deepEqual(lire(construireExport(donnees.personnages)).personnages, fichier.personnages);
+  assert.throws(() => lire({ ...fichier, schema: 4 }), (erreur) => erreur.code === 'SCHEMA_RECENT');
 });

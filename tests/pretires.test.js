@@ -1,4 +1,5 @@
 // Lot v0.3 — tests des pré-tirés (js/pretires.js) et des liens déclarés (js/liens.js).
+// Lot v0.4 — les possessions des pré-tirés sont des objets ; le Gilet en cuir et la Boussole portent leur bonus.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PRETIRES, personnagePretire, pretireParId } from '../js/pretires.js';
@@ -33,7 +34,7 @@ test('chaque pré-tiré : nom, profession, niveau, compétences, possessions et 
     const p = pretireParId(id);
     assert.deepEqual([p.nom, p.profession, p.niveau, p.exclusif], [nom, profession, niveau, exclusif], id);
     assert.deepEqual(COMPETENCES.map((code) => p.competences[code]), valeurs, id);
-    assert.deepEqual(p.possessions, possessions, id);
+    assert.deepEqual(p.possessions.map((objet) => objet.texte), possessions, id);
   }
   assert.equal(pretireParId('inconnu'), null);
 });
@@ -58,15 +59,15 @@ test('le personnage fabriqué : Endurance 9 / 9, Bourse 16, initiale = actuelle 
   }
 });
 
-test('les bonus : Défense +1 Gilet en cuir pour chacun ; Tjell : Exploration +1 Boussole, Défense −1 Fiche de l\'éditeur', () => {
+test('les bonus à la main : aucun, sauf Tjell : Défense −1 Fiche de l\'éditeur ; son Exploration reste 3', () => {
   for (const pretire of PRETIRES.filter((p) => p.id !== 'tjell')) {
     const p = fabrique(pretire);
-    assert.deepEqual(p.defense.bonus, [{ valeur: 1, raison: 'Gilet en cuir' }]);
+    assert.deepEqual(p.defense.bonus, []);
     for (const code of COMPETENCES) assert.deepEqual(p.competences[code].bonus, []);
   }
   const tjell = fabrique(pretireParId('tjell'));
-  assert.deepEqual(tjell.defense.bonus, [{ valeur: 1, raison: 'Gilet en cuir' }, { valeur: -1, raison: 'Fiche de l\'éditeur' }]);
-  assert.deepEqual(tjell.competences.exploration.bonus, [{ valeur: 1, raison: 'Boussole' }]);
+  assert.deepEqual(tjell.defense.bonus, [{ valeur: -1, raison: 'Fiche de l\'éditeur' }]);
+  for (const code of COMPETENCES) assert.deepEqual(tjell.competences[code].bonus, []);
   assert.equal(totalCompetence(tjell, 'exploration'), 3);
 });
 
@@ -74,11 +75,13 @@ test('le nom choisi remplace celui du pré-tiré ; deux personnages ne partagent
   const a = personnagePretire(pretireParId('liana'), 'Ma Liana', MAINTENANT, 'a');
   const b = personnagePretire(pretireParId('liana'), 'Autre', MAINTENANT, 'b');
   assert.equal(a.nom, 'Ma Liana');
-  a.possessions.push('Corde');
+  a.possessions.push({ texte: 'Corde', bonus: null });
+  a.possessions[1].bonus.valeur = 5;
   a.defense.bonus.push({ valeur: 2, raison: 'Bouclier' });
-  assert.deepEqual(b.possessions, ['Lance', 'Gilet en cuir']);
-  assert.equal(b.defense.bonus.length, 1);
-  assert.deepEqual(pretireParId('liana').possessions, ['Lance', 'Gilet en cuir']);
+  const attendu = [{ texte: 'Lance', bonus: null }, { texte: 'Gilet en cuir', bonus: { cible: 'defense', valeur: 1 } }];
+  assert.deepEqual(b.possessions, attendu);
+  assert.equal(b.defense.bonus.length, 0);
+  assert.deepEqual(pretireParId('liana').possessions, attendu);
 });
 
 test('le personnage fabriqué passe lire(construireExport([…])) sans changer', () => {
@@ -90,4 +93,30 @@ test('le personnage fabriqué passe lire(construireExport([…])) sans changer',
 test('LIENS.pretires est l\'adresse des fiches de l\'éditeur, seule entrée', () => {
   assert.deepEqual(Object.keys(LIENS), ['pretires']);
   assert.equal(LIENS.pretires, 'https://alkonost-editions.com/collections/livres-jeux/fabled-lands/personnages-pretires/livres-1-2/');
+});
+
+// ---- Lot v0.4 — les objets des pré-tirés --------------------------------------------------------------------
+
+test('les objets : le Gilet en cuir à Défense +1 chez les neuf, la Boussole de Tjell à Exploration +1, les autres sans bonus', () => {
+  for (const pretire of PRETIRES) {
+    const p = fabrique(pretire);
+    for (const objet of p.possessions) {
+      let attendu = null;
+      if (objet.texte === 'Gilet en cuir') attendu = { cible: 'defense', valeur: 1 };
+      if (objet.texte === 'Boussole' && pretire.id === 'tjell') attendu = { cible: 'exploration', valeur: 1 };
+      assert.deepEqual(objet, { texte: objet.texte, bonus: attendu }, `${pretire.id} / ${objet.texte}`);
+    }
+    assert.equal(p.possessions.filter((o) => o.texte === 'Gilet en cuir').length, 1, pretire.id);
+  }
+  assert.deepEqual(fabrique(pretireParId('tjell')).possessions.map((o) => o.texte), ['Bâton de combat', 'Boussole', 'Gilet en cuir']);
+});
+
+test('les Défenses publiées et l\'Exploration de Tjell, par les objets', () => {
+  const publiees = { liana: 7, andriel: 8, chalor: 4, marana: 6, ignace: 4, astariel: 5, rordon: 4, madrigua: 7, tjell: 6 };
+  for (const pretire of PRETIRES) assert.equal(defense(fabrique(pretire)), publiees[pretire.id], pretire.id);
+  assert.equal(totalCompetence(fabrique(pretireParId('tjell')), 'exploration'), 3);
+  // Sans le Gilet, la Défense perd 1 : elle vient bien de l'objet.
+  const liana = fabrique(pretireParId('liana'));
+  liana.possessions = liana.possessions.filter((o) => o.texte !== 'Gilet en cuir');
+  assert.equal(defense(liana), 6);
 });

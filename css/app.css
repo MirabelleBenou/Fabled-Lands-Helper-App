@@ -351,6 +351,21 @@ input:disabled, .bouton:disabled { opacity: .5; cursor: default; }
 }
 .possessions li::before { content: counter(objet) "."; width: 1.6em; text-align: right; color: var(--encre-douce); }
 .objet { flex: 1; padding: 10px 0; overflow-wrap: anywhere; }
+.possessions li { flex-wrap: wrap; }
+.possessions .puce { margin-left: 6px; font-size: 14px; }
+.possessions .editeur-objet { flex-basis: 100%; margin: 0 0 12px; padding: 4px 0 4px 16px; border-left: 2px solid var(--accent); }
+.ajout-objet, .ajout-possession { display: grid; grid-template-columns: minmax(9em, 14em) 5em auto; gap: 8px; margin: 4px 0 8px; }
+.ajout-possession { grid-template-columns: 1fr 10em 5em auto; margin: 4px 0 14px; }
+.ajout-objet { justify-content: start; grid-template-columns: 14em 5em auto; }
+@media (max-width: 520px) {
+  .ajout-possession, .ajout-objet { grid-template-columns: 1fr 5em auto; }
+  .ajout-objet select { grid-column: 1 / -1; }
+  .ajout-objet { grid-template-columns: 5em 1fr; }
+  .ajout-possession input[type="text"] { grid-column: 1 / -1; }
+}
+.puce.equipement { border-style: double; border-width: 3px; padding: 0 9px; }
+.puce.ignore, .bonus-liste li.ignore { opacity: .55; }
+.puce.ignore { text-decoration: line-through; }
 
 /* Les cultes : une entrée par cadre, le formulaire replié sous « Ajouter ». */
 .entrees { display: grid; gap: 12px; margin: 0 0 8px; padding: 0; list-style: none; }
