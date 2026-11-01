@@ -192,5 +192,17 @@
   "journal.adv_invalide": "Indiquez le nom, le Combat, la Défense et l'Endurance de l'adversaire.",
   "journal.adv_nouveau": "Nouvel adversaire",
   "journal.combats_passes": "Combats passés ({n})",
-  "journal.passe_chiffres": "Combat {combat}, Défense {defense}, Endurance {actuelle} / {max}"
+  "journal.passe_chiffres": "Combat {combat}, Défense {defense}, Endurance {actuelle} / {max}",
+  "feuille.codes": "Codes",
+  "codes.source": "Listes du livret d'aventure, livre {livre}.",
+  "codes.titre": "Codes",
+  "codes.compte": "{n} sur {total}",
+  "cases.titre": "Cases de section",
+  "cases.compte": "{n} cochées sur {total}",
+  "cases.chez_vous": "chez vous",
+  "cases.case": "Section {section}, case {n}",
+  "cases.cours": "Cases à cocher",
+  "journal.codes": "Codes liés",
+  "journal.codes_vide": "Aucun code lié.",
+  "journal.code_choisir": "Choisir un code"
 }

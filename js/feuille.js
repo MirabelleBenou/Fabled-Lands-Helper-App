@@ -6,9 +6,13 @@
 // Lot v0.5 — les dés : la barre des dés termine la fiche (js/des.js).
 // Lot v0.6 — le journal : deux rubriques de plus, Aventure (la section en cours et le chemin parcouru, les quêtes, les
 // notes) et Combats (le personnage, ses adversaires, les combats passés). L'écran ne calcule rien.
+// Lot v0.7 — les codes et les cases de section : une sixième rubrique, Codes (les codes du livret, puis ses cases de
+// section) ; les cases de la section en cours sous son numéro (Aventure) ; les codes liés d'une quête. L'écran ne
+// vérifie rien : chaque case se coche et se décoche seule.
 import { barreDes } from './des.js';
 import { t } from './i18n.js';
 import { LIENS } from './liens.js';
+import { LIVRETS, lignesDeSection } from './livret.js';
 import { PRETIRES, personnagePretire, pretireParId } from './pretires.js';
 import {
   CIBLES,
@@ -16,6 +20,7 @@ import {
   MAX_POSSESSIONS,
   ajouterAdversaire,
   ajouterBonus,
+  ajouterCodeQuete,
   ajouterEntree,
   ajouterNote,
   ajouterPossession,
@@ -23,6 +28,7 @@ import {
   ajouterSectionQuete,
   ajouterTitre,
   allerSection,
+  basculerCode,
   bonusObjets,
   changerBase,
   changerBonusObjet,
@@ -31,6 +37,7 @@ import {
   changerEnduranceAdversaire,
   changerEnduranceMax,
   changerNiveau,
+  cocherCase,
   defense,
   entierSaisi,
   feuilleLibre,
@@ -38,7 +45,9 @@ import {
   modifierAdversaire,
   modifierQuete,
   operationBourse,
+  rangsCoches,
   retirerBonus,
+  retirerCodeQuete,
   retirerDeListe,
   retirerSectionQuete,
   signe,
@@ -75,6 +84,8 @@ const RUBRIQUES = [
   // Lot v0.6 — le journal.
   ['aventure', () => t('feuille.aventure')],
   ['combats', () => t('feuille.combats')],
+  // Lot v0.7 — les codes et les cases de section.
+  ['codes', () => t('feuille.codes')],
 ];
 const DEPLIABLES = [...COMPETENCES, 'defense', 'endurance'];
 // Lot v0.4 — le nom d'une cible de bonus : la compétence, ou la Défense.
@@ -622,6 +633,36 @@ function blocCulte(contexte, p, culte) {
 
 const rubriqueCultes = (contexte, p) => CULTES.map((culte) => blocCulte(contexte, p, culte));
 
+// ---- Lot v0.7 — les cases de section : ce que partagent la rubrique Codes et la section en cours ----------
+
+// Le livre des listes de la rubrique Codes et du choix des codes d'une quête, quel que soit le livre en cours.
+const LIVRE_LISTES = 1;
+
+// Le libellé d'une ligne de cases : une table code → texte ; une ligne sans libellé n'en montre pas.
+const LIBELLE_LIGNE = {
+  chez_vous: () => t('cases.chez_vous'),
+};
+const libelleLigne = (ligne) => (Object.hasOwn(LIBELLE_LIGNE, ligne.libelle)
+  ? [el('span', { classe: 'ligne-libelle', texte: LIBELLE_LIGNE[ligne.libelle]() })]
+  : []);
+
+// Les cases de la ligne `ligne` du livre `livre` : une case par rang, cochée si le rang est coché ; au changement, la
+// case seule se coche ou se décoche, le focus revenant à la case.
+function casesLigne(contexte, p, livre, ligne) {
+  const coches = rangsCoches(p, livre, ligne.section, ligne.libelle, ligne.cases);
+  return el('span', { classe: 'cases' }, ...Array.from({ length: ligne.cases }, (_, rang) => {
+    const caseRang = el('input', {
+      type: 'checkbox', classe: 'case', test: 'case', 'aria-label': t('cases.case', { section: ligne.section, n: rang + 1 }),
+    });
+    caseRang.checked = coches.includes(rang);
+    caseRang.addEventListener('change', () => {
+      const cocher = caseRang.checked;
+      changer(contexte, p.id, (q) => cocherCase(q, livre, ligne.section, ligne.libelle, ligne.cases, rang, cocher), { declencheur: caseRang });
+    });
+    return el('label', { classe: 'zone-case' }, caseRang);
+  }));
+}
+
 // ---- Lot v0.6 — le journal : ce que partagent Aventure et Combats ---------------------------------------
 
 // « livre 1, section 112 ».
@@ -721,12 +762,18 @@ function blocSectionCours(contexte, p) {
         liste(pas.slice(PAS_VISIBLES))));
     }
   }
+  // Lot v0.7 — les cases de la section en cours, sous son numéro, s'il y en a (livre = le livre en cours).
+  const lignes = section === null ? [] : lignesDeSection(livre, section);
+  const casesCours = lignes.length === 0 ? [] : [el('div', { classe: 'cases-cours', test: 'cases-cours' },
+    el('span', { classe: 'legende', texte: t('feuille.etiquette', { libelle: t('cases.cours') }) }),
+    ...lignes.map((ligne) => el('span', { classe: 'ligne-cases' }, ...libelleLigne(ligne), casesLigne(contexte, p, livre, ligne))))];
   return el('section', { classe: 'cadre section-cours', test: 'section-cours' },
     el('h2', { classe: 'petit-titre', texte: t('journal.section_cours') }),
     el('div', { classe: 'cours-haut' },
       el('p', { classe: 'numero-cours' },
         el('span', { classe: 'livre-cours', texte: `${t('perso.livre')} ${livre}` }),
         el('span', { classe: 'numero', test: 'section-numero', texte: section === null ? '—' : String(section) })),
+      ...casesCours,
       formulaire),
     erreur,
     chemin);
@@ -758,6 +805,17 @@ function editeurQuete(contexte, p, base, index) {
   const section = champSection('quete-section-section', t('perso.section'), 1);
   const ajouter = el('button', { classe: 'bouton bouton-second', type: 'button', test: 'quete-section-ajouter', texte: t('feuille.ajouter') });
   action(ajouter, contexte, p.id, (q) => ajouterSectionQuete(q, index, livre.value, section.value));
+  // Lot v0.7 — les codes liés : retirés d'un toucher ; ajoutés depuis la liste du livret, sans ceux déjà liés.
+  const codes = quete.codes.length === 0
+    ? el('p', { classe: 'legende', test: 'quete-codes-vide', texte: t('journal.codes_vide') })
+    : el('ul', { classe: 'puces', test: 'quete-codes' }, ...quete.codes.map((code, rang) => el('li', { classe: 'puce' },
+      code,
+      action(boutonRetirer('retirer', '×', code), contexte, p.id, (q) => retirerCodeQuete(q, index, rang)))));
+  const choixCode = el('select', { test: 'quete-code-choix', 'aria-label': t('journal.code_choisir') },
+    el('option', { value: '', texte: t('journal.code_choisir') }),
+    ...LIVRETS[LIVRE_LISTES].codes.filter((code) => !quete.codes.includes(code)).map((code) => el('option', { value: code, texte: code })));
+  const ajouterCode = el('button', { classe: 'bouton bouton-second', type: 'button', test: 'quete-code-ajouter', texte: t('feuille.ajouter') });
+  action(ajouterCode, contexte, p.id, (q) => ajouterCodeQuete(q, index, choixCode.value));
   return el('div', { classe: 'editeur editeur-quete', test: 'editeur-quete' },
     el('label', { classe: 'petit-titre', texte: t('journal.titre') }, titre),
     el('label', { classe: 'petit-titre', texte: t('journal.personnages') }, personnages),
@@ -767,6 +825,9 @@ function editeurQuete(contexte, p, base, index) {
       el('label', {}, el('span', { classe: 'legende', texte: t('perso.livre') }), livre),
       el('label', {}, el('span', { classe: 'legende', texte: t('perso.section') }), section),
       ajouter),
+    el('p', { classe: 'petit-titre', texte: t('journal.codes') }),
+    codes,
+    el('div', { classe: 'ajout-code' }, choixCode, ajouterCode),
     el('div', { classe: 'actions' },
       el('a', { classe: 'lien', href: base, texte: t('feuille.fermer') }),
       boutonDeuxTemps(contexte, p.id, { classe: 'lien lien-danger', test: 'quete-retirer', texte: t('journal.quete_retirer'), nom: quete.titre },
@@ -798,6 +859,12 @@ function carteQuete(contexte, p, base, index, ouverte) {
     carte.append(el('div', { classe: 'quete-sections' },
       el('span', { classe: 'legende', texte: t('feuille.etiquette', { libelle: t('journal.sections') }) }),
       ...quete.sections.map((e) => pastille(contexte, p, e, 'quete-pas'))));
+  }
+  // Lot v0.7 — les codes liés, en pastilles : « tenu » si le personnage a le code.
+  if (quete.codes.length > 0) {
+    carte.append(el('div', { classe: 'quete-codes' },
+      el('span', { classe: 'legende', texte: t('feuille.etiquette', { libelle: t('journal.codes') }) }),
+      ...quete.codes.map((code) => el('span', { classe: p.codes.includes(code) ? 'puce code-lie tenu' : 'puce code-lie', test: 'quete-code', texte: code }))));
   }
   carte.append(el('a', { classe: 'lien', test: 'quete-modifier', href: `${base}/q${index}`, texte: t('feuille.modifier') }));
   return carte;
@@ -988,6 +1055,40 @@ function rubriqueCombats(contexte, p, base, ouvert) {
   return noeuds;
 }
 
+// ---- Lot v0.7 — la fiche : Codes ------------------------------------------------------------------------
+
+// Les codes du livret à cocher, puis ses cases de section, ligne par ligne (toujours celles du livre des listes).
+function rubriqueCodes(contexte, p) {
+  const { codes, cases } = LIVRETS[LIVRE_LISTES];
+  const tenus = codes.filter((code) => p.codes.includes(code)).length;
+  const cochees = cases.reduce((n, ligne) => n + rangsCoches(p, LIVRE_LISTES, ligne.section, ligne.libelle, ligne.cases).length, 0);
+  const totalCases = cases.reduce((n, ligne) => n + ligne.cases, 0);
+  const { livre, section } = p.section_en_cours;
+  const blocCodes = el('section', { classe: 'bloc', test: 'bloc-codes' },
+    el('h2', { classe: 'rubrique' }, t('codes.titre'),
+      el('span', { classe: 'compte', test: 'codes-compte', texte: ` ${t('codes.compte', { n: tenus, total: codes.length })}` })),
+    el('ul', { classe: 'grille-codes', test: 'codes' }, ...codes.map((code) => {
+      const tenu = p.codes.includes(code);
+      const caseCode = el('input', { type: 'checkbox', classe: 'case', test: 'code' });
+      caseCode.checked = tenu;
+      caseCode.addEventListener('change', () => changer(contexte, p.id, (q) => basculerCode(q, code), { declencheur: caseCode }));
+      return el('li', {}, el('label', { classe: tenu ? 'code tenu' : 'code' }, caseCode, el('span', { texte: code })));
+    })));
+  const blocCases = el('section', { classe: 'bloc', test: 'bloc-cases' },
+    el('h2', { classe: 'rubrique' }, t('cases.titre'),
+      el('span', { classe: 'compte', test: 'cases-compte', texte: ` ${t('cases.compte', { n: cochees, total: totalCases })}` })),
+    el('ul', { classe: 'grille-cases', test: 'cases' }, ...cases.map((ligne) => {
+      const classes = ['ligne-cases'];
+      if (ligne.cases > 1 || ligne.libelle !== '') classes.push('large');
+      if (livre === LIVRE_LISTES && section === ligne.section) classes.push('en-cours');
+      return el('li', { classe: classes.join(' '), test: 'ligne-cases' },
+        el('span', { classe: 'ligne-numero', texte: String(ligne.section) }),
+        ...libelleLigne(ligne),
+        casesLigne(contexte, p, LIVRE_LISTES, ligne));
+    })));
+  return [el('p', { classe: 'legende source-listes', texte: t('codes.source', { livre: LIVRE_LISTES }) }), blocCodes, blocCases];
+}
+
 // ---- La fiche ------------------------------------------------------------------------------------------
 
 // La fiche : #/perso/<id>[/<rubrique>[/<déplié>]] ; route = { id, rubrique, deplie, objet, ouvert } (lot v0.4 : `objet`,
@@ -1011,6 +1112,7 @@ export async function vueFiche(contexte, route) {
   else if (route.rubrique === 'cultes') contenu = rubriqueCultes(contexte, p);
   else if (route.rubrique === 'aventure') contenu = rubriqueAventure(contexte, p, `${racine}/aventure`, route.ouvert);
   else if (route.rubrique === 'combats') contenu = rubriqueCombats(contexte, p, `${racine}/combats`, route.ouvert);
+  else if (route.rubrique === 'codes') contenu = rubriqueCodes(contexte, p);
   else {
     const deplie = DEPLIABLES.includes(route.deplie) ? route.deplie : null;
     contenu = rubriqueStatistiques(contexte, p, `${racine}/statistiques`, deplie);

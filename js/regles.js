@@ -4,6 +4,7 @@
 // Lot v0.4 — le bonus des objets : une possession est un objet { texte, bonus }, son bonus entre seul dans le total.
 // Lot v0.6 — le journal : la section en cours et le chemin parcouru, les quêtes, les notes, les combats. Rien n'y
 // est calculé : ni jet, ni dégât, ni issue de combat.
+// Lot v0.7 — les codes et les cases de section cochés, les codes liés d'une quête. Rien n'y est vérifié.
 export const COMPETENCES = ['charisme', 'combat', 'magie', 'piete', 'exploration', 'adresse'];
 
 // Lot v0.4 — les cibles d'un bonus d'objet : les six compétences, dans l'ordre de COMPETENCES, puis la Défense.
@@ -263,7 +264,7 @@ export function ajouterQuete(personnage, titreSaisi) {
   const titre = String(titreSaisi ?? '').trim();
   if (titre === '') return null;
   const nouveau = copie(personnage);
-  nouveau.quetes.push({ titre, personnages: '', sections: [], terminee: false });
+  nouveau.quetes.push({ titre, personnages: '', sections: [], codes: [], terminee: false });
   return nouveau;
 }
 
@@ -364,5 +365,60 @@ export function finirCombat(personnage, index) {
   if (!dansListe(personnage.combats, index) || personnage.combats[index].termine) return null;
   const nouveau = copie(personnage);
   nouveau.combats[index].termine = true;
+  return nouveau;
+}
+
+// ---- Lot v0.7 — les codes et les cases de section --------------------------------------------------------
+
+const estCode = (code) => typeof code === 'string' && code !== '';
+
+// Un code coché est retiré, sinon il s'ajoute à la fin ; un code qui n'est pas une chaîne non vide → null.
+export function basculerCode(personnage, code) {
+  if (!estCode(code)) return null;
+  const nouveau = copie(personnage);
+  if (nouveau.codes.includes(code)) nouveau.codes = nouveau.codes.filter((c) => c !== code);
+  else nouveau.codes.push(code);
+  return nouveau;
+}
+
+// La place de la ligne (livre, section, libelle) dans les cases du personnage, ou -1.
+const placeLigne = (personnage, livre, section, libelle) => personnage.cases
+  .findIndex((l) => l.livre === livre && l.section === section && l.libelle === libelle);
+
+// Les rangs cochés de la ligne (livre, section, libelle) qui sont < max, croissants ; [] si la ligne n'y est pas.
+export function rangsCoches(personnage, livre, section, libelle, max) {
+  const place = placeLigne(personnage, livre, section, libelle);
+  if (place === -1) return [];
+  return personnage.cases[place].rangs.filter((rang) => rang < max).sort((a, b) => a - b);
+}
+
+// La case `rang` de la ligne (livre, section, libelle) se coche (`cocher` vrai) ou se décoche. Un rang hors de
+// [0, max[, ou une case déjà dans l'état demandé → null. La ligne est retirée puis réécrite à la fin des cases, ou
+// seulement retirée si elle n'a plus de rang.
+export function cocherCase(personnage, livre, section, libelle, max, rang, cocher) {
+  if (!Number.isInteger(rang) || rang < 0 || rang >= max) return null;
+  const place = placeLigne(personnage, livre, section, libelle);
+  const ligne = place === -1 ? { livre, section, libelle, rangs: [] } : personnage.cases[place];
+  if (ligne.rangs.includes(rang) === cocher) return null;
+  const nouveau = copie(personnage);
+  const rangs = cocher ? [...ligne.rangs, rang].sort((a, b) => a - b) : ligne.rangs.filter((r) => r !== rang);
+  if (place !== -1) nouveau.cases.splice(place, 1);
+  if (rangs.length > 0) nouveau.cases.push({ ...structuredClone(ligne), rangs });
+  return nouveau;
+}
+
+// Un code lié s'ajoute à la fin de ceux de la quête ; index hors de la liste, code qui n'est pas une chaîne non vide
+// ou déjà lié → null.
+export function ajouterCodeQuete(personnage, index, code) {
+  if (!dansListe(personnage.quetes, index) || !estCode(code) || personnage.quetes[index].codes.includes(code)) return null;
+  const nouveau = copie(personnage);
+  nouveau.quetes[index].codes.push(code);
+  return nouveau;
+}
+
+export function retirerCodeQuete(personnage, index, rang) {
+  if (!dansListe(personnage.quetes, index) || !dansListe(personnage.quetes[index].codes, rang)) return null;
+  const nouveau = copie(personnage);
+  nouveau.quetes[index].codes.splice(rang, 1);
   return nouveau;
 }

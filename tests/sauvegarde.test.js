@@ -3,6 +3,8 @@
 // Lot v0.4 — le schéma 3 : les tests du schéma 2 mis au schéma 3 (possessions en objets), la complétion des objets
 // et le rattachement des bonus à la main.
 // Lot v0.6 — le schéma 4 : les tests du schéma 3 mis au schéma 4 (le journal), la complétion des quatre listes.
+// Lot v0.7 — le schéma 5 : les tests du schéma 4 comme schéma courant mis au schéma 5 (les codes et les cases de
+// section), la complétion des trois listes neuves.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { SCHEMA, completerPersonnage, construireExport, lire, nomFichierExport, personnageNeuf } from '../js/sauvegarde.js';
@@ -11,8 +13,11 @@ import { defense } from '../js/regles.js';
 // Lot v0.6 — le journal vide (ce que reçoit un personnage des schémas 1, 2 et 3).
 const JOURNAL_VIDE = { historique: [], quetes: [], notes: [], combats: [] };
 
+// Lot v0.7 — les codes et les cases vides (ce que reçoit un personnage des schémas 1 à 4).
+const LISTES_VIDES = { codes: [], cases: [] };
+
 // Lot v0.3 — la feuille aux valeurs neutres du schéma 2 (ce que reçoit un personnage du schéma 1) ; lot v0.6 : et le
-// journal vide.
+// journal vide ; lot v0.7 : et les codes et les cases vides.
 const FEUILLE_NEUTRE = {
   endurance: { max: 0, actuelle: 0 },
   competences: {
@@ -33,10 +38,11 @@ const FEUILLE_NEUTRE = {
   histoire: '',
   pretire: null,
   ...JOURNAL_VIDE,
+  ...LISTES_VIDES,
 };
 
-// Un personnage complet du schéma 4 (lot v0.4 : les bonus de la Lance et du Gilet sont sur les objets ; lot v0.6 : le
-// journal).
+// Un personnage complet du schéma 5 (lot v0.4 : les bonus de la Lance et du Gilet sont sur les objets ; lot v0.6 : le
+// journal ; lot v0.7 : les codes, les cases de section et les codes liés d'une quête).
 const feuilleComplete = () => ({
   endurance: { max: 9, actuelle: 6 },
   competences: {
@@ -57,14 +63,16 @@ const feuilleComplete = () => ({
   histoire: 'Partie de Sokar.',
   pretire: 'liana',
   historique: [{ livre: 1, section: 1 }, { livre: 1, section: 87 }],
-  quetes: [{ titre: 'Retrouver Aldo', personnages: 'Aldo', sections: [{ livre: 1, section: 112 }], terminee: false }],
+  quetes: [{ titre: 'Retrouver Aldo', personnages: 'Aldo', sections: [{ livre: 1, section: 112 }], codes: ['Aide'], terminee: false }],
   notes: [{ texte: 'Le port.', livre: 1, section: 87, ecrite_le: '2026-10-23T13:20:00.000Z' }],
   combats: [{ nom: 'Loup', combat: 4, defense: 6, endurance: { max: 9, actuelle: 5 }, livre: 1, section: 183, termine: false }],
+  codes: ['Aide', 'Azur'],
+  cases: [{ livre: 1, section: 19, libelle: '', rangs: [0, 2] }, { livre: 1, section: 10, libelle: 'chez_vous', rangs: [0] }],
 });
 
 const complet = () => ({
   format: 'fabled-lands-helper',
-  schema: 4,
+  schema: 5,
   exporte_le: '2026-10-23T14:00:00.000Z',
   personnages: [{
     id: 'a',
@@ -171,12 +179,12 @@ test('lire conserve les champs inconnus, au niveau du personnage comme plus bas'
   assert.deepEqual(fichier.personnages[0].sac, { objets: ['corde'] });
 });
 
-test('construireExport écrit le fichier du schéma 4, et lire le relit', () => {
+test('construireExport écrit le fichier du schéma 5, et lire le relit', () => {
   const personnages = lire(complet()).personnages;
   const fichier = construireExport(personnages, new Date('2026-10-24T08:00:00.000Z'));
   assert.deepEqual(Object.keys(fichier), ['format', 'schema', 'exporte_le', 'personnages']);
   assert.equal(fichier.format, 'fabled-lands-helper');
-  assert.equal(fichier.schema, 4);
+  assert.equal(fichier.schema, 5);
   assert.equal(fichier.exporte_le, '2026-10-24T08:00:00.000Z');
   assert.deepEqual(lire(JSON.parse(JSON.stringify(fichier))).personnages, personnages);
 });
@@ -213,8 +221,8 @@ function relu(champ, valeur) {
   return lire(fichier).personnages[0];
 }
 
-test('SCHEMA vaut 4', () => {
-  assert.equal(SCHEMA, 4);
+test('SCHEMA vaut 5', () => {
+  assert.equal(SCHEMA, 5);
 });
 
 test('la migration d\'un personnage du schéma 1 : tout gardé, la feuille aux valeurs neutres', () => {
@@ -223,11 +231,11 @@ test('la migration d\'un personnage du schéma 1 : tout gardé, la feuille aux v
     section_en_cours: { livre: 1, section: 1 }, cree_le: '2026-10-23T13:00:00.000Z', modifie_le: '2026-10-23T13:10:00.000Z',
   };
   const donnees = lire({ format: 'fabled-lands-helper', schema: 1, exporte_le: '2026-10-23T14:00:00.000Z', personnages: [ancien] });
-  assert.equal(donnees.schema, 4);
+  assert.equal(donnees.schema, 5);
   assert.deepEqual(donnees.personnages[0], { ...ancien, ...FEUILLE_NEUTRE });
 });
 
-test('un personnage complet du schéma 4 est relu sans changer', () => {
+test('un personnage complet du schéma 5 est relu sans changer', () => {
   const fichier = complet();
   assert.deepEqual(lire(fichier).personnages, fichier.personnages);
   assert.deepEqual(lire(JSON.parse(JSON.stringify(fichier))).personnages, fichier.personnages);
@@ -348,8 +356,8 @@ test('un champ inconnu est conservé à côté des champs neufs, au personnage c
   assert.equal(lu.bourse, 41);
 });
 
-test('schema: 5 lève SCHEMA_RECENT', () => {
-  assert.throws(() => lire({ ...complet(), schema: 5 }), (erreur) => erreur.code === 'SCHEMA_RECENT');
+test('schema: 6 lève SCHEMA_RECENT', () => {
+  assert.throws(() => lire({ ...complet(), schema: 6 }), (erreur) => erreur.code === 'SCHEMA_RECENT');
 });
 
 test('completerPersonnage (le stockage) : même complétion, refuse sans id ou sans nom, ne partage rien', () => {
@@ -468,7 +476,7 @@ test('rattachement : aussi à la lecture du stockage (completerPersonnage), le p
   assert.deepEqual(brut, avant);
 });
 
-test('lire un fichier du schéma 3 ne change rien (sauf le journal vide) ; le même au schéma 5 lève SCHEMA_RECENT', () => {
+test('lire un fichier du schéma 3 ne change rien (sauf le journal, les codes et les cases vides) ; le même au schéma 6 lève SCHEMA_RECENT', () => {
   const fichier = fichierAvec(3, {
     possessions: [
       { texte: 'Lance de qualité', bonus: { cible: 'combat', valeur: 1 } },
@@ -476,13 +484,13 @@ test('lire un fichier du schéma 3 ne change rien (sauf le journal vide) ; le m�
       { texte: 'Anneau terni', bonus: { cible: 'charisme', valeur: -1 } },
     ],
   });
-  for (const liste of Object.keys(JOURNAL_VIDE)) delete fichier.personnages[0][liste];
-  const attendus = fichier.personnages.map((p) => ({ ...p, ...JOURNAL_VIDE }));
+  for (const liste of Object.keys({ ...JOURNAL_VIDE, ...LISTES_VIDES })) delete fichier.personnages[0][liste];
+  const attendus = fichier.personnages.map((p) => ({ ...p, ...JOURNAL_VIDE, ...LISTES_VIDES }));
   const donnees = lire(JSON.parse(JSON.stringify(fichier)));
-  assert.equal(donnees.schema, 4);
+  assert.equal(donnees.schema, 5);
   assert.deepEqual(donnees.personnages, attendus);
   assert.deepEqual(lire(construireExport(donnees.personnages)).personnages, attendus);
-  assert.throws(() => lire({ ...fichier, schema: 5 }), (erreur) => erreur.code === 'SCHEMA_RECENT');
+  assert.throws(() => lire({ ...fichier, schema: 6 }), (erreur) => erreur.code === 'SCHEMA_RECENT');
 });
 
 // ---- Lot v0.6 — le schéma 4 : le journal --------------------------------------------------------------------
@@ -534,9 +542,9 @@ test('complétion : quêtes, sans titre retirée ; personnages "" ; sections net
     { titre: 'Plume', personnages: 'Hesta', sections: [], terminee: 1 },
   ];
   assert.deepEqual(relu('quetes', quetes).quetes, [
-    { titre: 'Trouver Aldo', personnages: '', sections: [{ livre: 1, section: 112 }], terminee: false, note: 'n' },
-    { titre: 'Lettre', personnages: '', sections: [], terminee: true },
-    { titre: 'Plume', personnages: 'Hesta', sections: [], terminee: false },
+    { titre: 'Trouver Aldo', personnages: '', sections: [{ livre: 1, section: 112 }], codes: [], terminee: false, note: 'n' },
+    { titre: 'Lettre', personnages: '', sections: [], codes: [], terminee: true },
+    { titre: 'Plume', personnages: 'Hesta', sections: [], codes: [], terminee: false },
   ]);
 });
 
@@ -569,20 +577,107 @@ test('complétion : combats, sans nom retiré ; Combat, Défense 0 ; Endurance r
   ]);
 });
 
-test('lire un fichier du schéma 4 ne change rien ; schema: 5 lève SCHEMA_RECENT', () => {
+test('lire un fichier du schéma 4 ne change rien (sauf les codes et les cases vides) ; schema: 6 lève SCHEMA_RECENT', () => {
   const fichier = complet();
+  fichier.schema = 4;
+  for (const liste of Object.keys(LISTES_VIDES)) delete fichier.personnages[0][liste];
+  for (const quete of fichier.personnages[0].quetes) delete quete.codes;
   fichier.personnages[0].historique = Array.from({ length: 200 }, (_, i) => ({ livre: 1 + (i % 2), section: i + 1 }));
   fichier.personnages[0].combats.push({ nom: 'Brigand', combat: 5, defense: 8, endurance: { max: 12, actuelle: 0 }, livre: null, section: null, termine: true });
+  const attendus = fichier.personnages.map((p) => ({ ...p, quetes: p.quetes.map((q) => ({ ...q, codes: [] })), ...LISTES_VIDES }));
   const donnees = lire(JSON.parse(JSON.stringify(fichier)));
-  assert.equal(donnees.schema, 4);
-  assert.deepEqual(donnees.personnages, fichier.personnages);
-  assert.deepEqual(lire(JSON.parse(JSON.stringify(construireExport(donnees.personnages)))).personnages, fichier.personnages);
-  assert.throws(() => lire({ ...fichier, schema: 5 }), (erreur) => erreur.code === 'SCHEMA_RECENT');
+  assert.equal(donnees.schema, 5);
+  assert.deepEqual(donnees.personnages, attendus);
+  assert.deepEqual(lire(JSON.parse(JSON.stringify(construireExport(donnees.personnages)))).personnages, attendus);
+  assert.throws(() => lire({ ...fichier, schema: 6 }), (erreur) => erreur.code === 'SCHEMA_RECENT');
 });
 
-test('personnageNeuf : les quatre listes vides, après pretire, dans l\'ordre historique, quetes, notes, combats', () => {
+test('personnageNeuf : les quatre listes vides, après pretire, dans l\'ordre historique, quetes, notes, combats, puis codes, cases', () => {
   const neuf = personnageNeuf('Dalia', 'Voleuse', new Date('2026-10-25T10:00:00.000Z'), 'id-neuf');
   const cles = Object.keys(neuf);
-  assert.deepEqual(cles.slice(cles.indexOf('pretire')), ['pretire', 'historique', 'quetes', 'notes', 'combats']);
-  for (const liste of Object.keys(JOURNAL_VIDE)) assert.deepEqual(neuf[liste], [], liste);
+  assert.deepEqual(cles.slice(cles.indexOf('pretire')), ['pretire', 'historique', 'quetes', 'notes', 'combats', 'codes', 'cases']);
+  for (const liste of Object.keys({ ...JOURNAL_VIDE, ...LISTES_VIDES })) assert.deepEqual(neuf[liste], [], liste);
+});
+
+// ---- Lot v0.7 — le schéma 5 : les codes, les cases de section, les codes liés d'une quête --------------------
+
+test('complétion : un personnage du schéma 4 reçoit codes, cases et quetes[].codes vides, rien d\'autre ne change', () => {
+  const fichier = complet();
+  fichier.schema = 4;
+  const brut = fichier.personnages[0];
+  for (const liste of Object.keys(LISTES_VIDES)) delete brut[liste];
+  delete brut.quetes[0].codes;
+  brut.quetes.push({ titre: 'Lettre', personnages: '', sections: [], terminee: true });
+  const lu = lire(fichier).personnages[0];
+  assert.deepEqual(lu, { ...brut, quetes: brut.quetes.map((q) => ({ ...q, codes: [] })), ...LISTES_VIDES });
+  assert.deepEqual(Object.keys(lu).slice(-2), ['codes', 'cases']);
+});
+
+test('complétion : codes, cases et quetes[].codes qui ne sont pas un tableau deviennent []', () => {
+  for (const valeur of [undefined, null, 'Aide', 3, { a: 1 }]) {
+    assert.deepEqual(relu('codes', valeur).codes, [], `codes ${String(valeur)}`);
+    assert.deepEqual(relu('cases', valeur).cases, [], `cases ${String(valeur)}`);
+    const quetes = [{ titre: 'Une', personnages: '', sections: [], codes: valeur, terminee: false }];
+    assert.deepEqual(relu('quetes', quetes).quetes[0].codes, [], `quetes ${String(valeur)}`);
+  }
+});
+
+test('complétion : codes non textes ou vides retirés ; d\'un doublon, la première occurrence reste (aussi dans une quête)', () => {
+  const codes = ['Azur', '', 3, null, 'Aide', 'Azur', ['Air'], 'Aide', 'Air'];
+  assert.deepEqual(relu('codes', codes).codes, ['Azur', 'Aide', 'Air']);
+  const quetes = [{ titre: 'Une', personnages: '', sections: [], codes, terminee: false }];
+  assert.deepEqual(relu('quetes', quetes).quetes[0].codes, ['Azur', 'Aide', 'Air']);
+});
+
+test('complétion : cases, une ligne sans rang valide ou mal formée est retirée ; rangs dédoublonnés et triés', () => {
+  const cases = [
+    { livre: 1, section: 19, libelle: '', rangs: [2, 0, 2, -1, 1.5, '1', null, 0] },
+    { livre: 1, section: 16, libelle: '', rangs: [] },
+    { livre: 1, section: 91, libelle: '', rangs: [-1, 'x'] },
+    { livre: 1, section: 116, libelle: '', rangs: 'tout' },
+    { livre: 1, section: 116, libelle: '' },
+    { livre: 0, section: 10, libelle: '', rangs: [0] },
+    { livre: 1, section: 0, libelle: '', rangs: [0] },
+    { livre: '1', section: 10, libelle: '', rangs: [0] },
+    { livre: 1, section: 10.5, libelle: '', rangs: [0] },
+    { livre: 1, section: 10, rangs: [0] },
+    { livre: 1, section: 10, libelle: 3, rangs: [0] },
+    null, 'case', [1, 10, '', [0]],
+    { livre: 1, section: 10, libelle: 'chez_vous', rangs: [0] },
+    { livre: 2, section: 5, libelle: 'ailleurs', rangs: [9, 7] },
+  ];
+  assert.deepEqual(relu('cases', cases).cases, [
+    { livre: 1, section: 19, libelle: '', rangs: [0, 2] },
+    { livre: 1, section: 10, libelle: 'chez_vous', rangs: [0] },
+    { livre: 2, section: 5, libelle: 'ailleurs', rangs: [7, 9] },
+  ]);
+});
+
+test('complétion : un champ inconnu d\'une ligne de cases gardée est conservé ; un rang au-delà du livret reste écrit', () => {
+  const cases = [{ livre: 1, section: 91, libelle: '', rangs: [5, 0], note: 'au crayon' }];
+  assert.deepEqual(relu('cases', cases).cases, [{ livre: 1, section: 91, libelle: '', rangs: [0, 5], note: 'au crayon' }]);
+});
+
+test('lire un fichier du schéma 5 ne change rien ; l\'export le relit à l\'identique', () => {
+  const fichier = complet();
+  fichier.personnages[0].codes = ['Azur', 'Abandonné', 'Aide'];
+  fichier.personnages[0].cases = [
+    { livre: 1, section: 10, libelle: '', rangs: [0, 1, 3] },
+    { livre: 1, section: 100, libelle: 'chez_vous', rangs: [0] },
+    { livre: 1, section: 19, libelle: '', rangs: [2] },
+  ];
+  fichier.personnages[0].quetes.push({ titre: 'Lettre', personnages: '', sections: [], codes: ['Alissia', 'Aide'], terminee: true });
+  const donnees = lire(JSON.parse(JSON.stringify(fichier)));
+  assert.equal(donnees.schema, 5);
+  assert.deepEqual(donnees.personnages, fichier.personnages);
+  assert.deepEqual(lire(JSON.parse(JSON.stringify(construireExport(donnees.personnages)))).personnages, fichier.personnages);
+});
+
+test('completerPersonnage (le stockage) : les codes et les cases complétés, le personnage d\'origine ne change pas', () => {
+  const brut = { id: 'c', nom: 'Corin', codes: ['Aide', 'Aide', ''], cases: [{ livre: 1, section: 19, libelle: '', rangs: [1, 1] }] };
+  const avant = structuredClone(brut);
+  const lu = completerPersonnage(brut);
+  assert.deepEqual(lu.codes, ['Aide']);
+  assert.deepEqual(lu.cases, [{ livre: 1, section: 19, libelle: '', rangs: [1] }]);
+  assert.deepEqual(brut, avant);
 });

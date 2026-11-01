@@ -4,6 +4,7 @@
 // Lot v0.3.1 — la page du mode pré-tiré comprend le choix : toucher un personnage ramène l'écran en haut.
 // Lot v0.4 — la route de l'éditeur du bonus d'un objet, #/perso/<id>/possessions/<index>.
 // Lot v0.6 — les rubriques Aventure et Combats, et ce qu'elles ouvrent : #/perso/<id>/aventure|combats/<ouvert>.
+// Lot v0.7 — la rubrique Codes, #/perso/<id>/codes : elle n'ouvre rien.
 import { chargerLangue, choisirLangue, traduirePage } from './i18n.js';
 import { lire } from './sauvegarde.js';
 import { ecouterInstallation, surveillerControleur } from './pwa.js';
@@ -45,7 +46,7 @@ window.__FLH__ = { importer };
 
 // Les routes sont des ancres. Toute route inconnue mène à l'accueil. `page` nomme la page affichée : le haut de
 // page n'est remis que quand elle change (lot v0.3).
-const RUBRIQUES = ['statistiques', 'possessions', 'cultes', 'aventure', 'combats'];
+const RUBRIQUES = ['statistiques', 'possessions', 'cultes', 'aventure', 'combats', 'codes'];
 
 function analyserRoute(hash) {
   const morceaux = hash.replace(/^#\/?/, '').split('/');

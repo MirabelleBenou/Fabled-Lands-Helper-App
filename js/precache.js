@@ -22,6 +22,7 @@ export const PRECACHE = [
   'js/feuille.js',
   'js/i18n.js',
   'js/liens.js',
+  'js/livret.js',
   'js/precache.js',
   'js/pretires.js',
   'js/pwa.js',

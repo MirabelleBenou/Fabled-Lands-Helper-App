@@ -1,7 +1,9 @@
 // Lot v0.3 — tests des règles de calcul de la feuille d'aventure et de leurs bornes (js/regles.js).
 // Lot v0.6 — les transformations du journal : la section en cours et le chemin, les quêtes, les notes, les combats.
+// Lot v0.7 — les listes du livret (js/livret.js), les codes et les cases de section, les codes liés d'une quête.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import {
   CIBLES,
   COMPETENCES,
@@ -9,6 +11,7 @@ import {
   MAX_POSSESSIONS,
   ajouterAdversaire,
   ajouterBonus,
+  ajouterCodeQuete,
   ajouterEntree,
   ajouterNote,
   ajouterPossession,
@@ -16,6 +19,7 @@ import {
   ajouterSectionQuete,
   ajouterTitre,
   allerSection,
+  basculerCode,
   bonusObjets,
   changerBase,
   changerBonusObjet,
@@ -24,6 +28,7 @@ import {
   changerEnduranceAdversaire,
   changerEnduranceMax,
   changerNiveau,
+  cocherCase,
   defense,
   entierSaisi,
   feuilleLibre,
@@ -31,12 +36,15 @@ import {
   modifierAdversaire,
   modifierQuete,
   operationBourse,
+  rangsCoches,
   retirerBonus,
+  retirerCodeQuete,
   retirerDeListe,
   retirerSectionQuete,
   signe,
   totalCompetence,
 } from '../js/regles.js';
+import { LIVRETS, lignesDeSection } from '../js/livret.js';
 import { personnageNeuf } from '../js/sauvegarde.js';
 
 const MAINTENANT = new Date('2026-10-24T10:00:00.000Z');
@@ -400,7 +408,7 @@ test('allerSection : à 200 entrées, la plus ancienne sort', () => {
 test('ajouterQuete : titre aux espaces de bord retirés ; titre vide → null', () => {
   const p = perso();
   const apres = ajouterQuete(p, '  Trouver un passeur ');
-  assert.deepEqual(apres.quetes, [{ titre: 'Trouver un passeur', personnages: '', sections: [], terminee: false }]);
+  assert.deepEqual(apres.quetes, [{ titre: 'Trouver un passeur', personnages: '', sections: [], codes: [], terminee: false }]);
   for (const titre of ['', '   ', null, undefined]) assert.equal(ajouterQuete(p, titre), null, String(titre));
   assert.deepEqual(p.quetes, []);
 });
@@ -408,7 +416,7 @@ test('ajouterQuete : titre aux espaces de bord retirés ; titre vide → null', 
 test('modifierQuete : titre, personnages, terminee ; titre vide ou index hors de la liste → null', () => {
   const p = ajouterQuete(ajouterQuete(perso(), 'Une'), 'Deux');
   const apres = modifierQuete(p, 1, { titre: ' Deux bis ', personnages: ' Orlo ', terminee: true });
-  assert.deepEqual(apres.quetes[1], { titre: 'Deux bis', personnages: 'Orlo', sections: [], terminee: true });
+  assert.deepEqual(apres.quetes[1], { titre: 'Deux bis', personnages: 'Orlo', sections: [], codes: [], terminee: true });
   assert.deepEqual(apres.quetes[0], p.quetes[0]);
   assert.equal(modifierQuete(apres, 1, { terminee: false }).quetes[1].terminee, false);
   assert.equal(modifierQuete(p, 0, { personnages: '' }).quetes[0].personnages, '');
@@ -501,4 +509,106 @@ test('retirerDeListe sert aussi pour les quêtes, les notes et les combats', () 
   assert.deepEqual(retirerDeListe(p, 'notes', 0).notes, []);
   assert.deepEqual(retirerDeListe(p, 'combats', 0).combats, []);
   assert.equal(retirerDeListe(p, 'combats', 1), null);
+});
+
+// ---- Lot v0.7 — les listes du livret ------------------------------------------------------------------------
+
+test('LIVRETS : l\'équivalence (1 814 caractères, sha256) ; seul le livre 1', () => {
+  const texte = JSON.stringify(LIVRETS);
+  assert.equal(texte.length, 1814);
+  assert.equal(createHash('sha256').update(texte, 'utf8').digest('hex'), 'f677fe3fa4f65edf9fce992594c43944404e4f3309f1c21e229bd8dcca241f1b');
+  assert.deepEqual(Object.keys(LIVRETS), ['1']);
+});
+
+test('LIVRETS : 35 codes, 37 lignes, 42 cases', () => {
+  const { codes, cases } = LIVRETS[1];
+  assert.equal(codes.length, 35);
+  assert.equal(new Set(codes).size, 35);
+  assert.equal(cases.length, 37);
+  assert.equal(cases.reduce((n, ligne) => n + ligne.cases, 0), 42);
+});
+
+test('lignesDeSection : les deux lignes de la section 10 dans l\'ordre ; sans ligne ou sans livret → []', () => {
+  assert.deepEqual(lignesDeSection(1, 10), [{ section: 10, libelle: '', cases: 4 }, { section: 10, libelle: 'chez_vous', cases: 1 }]);
+  assert.deepEqual(lignesDeSection(1, 116), [{ section: 116, libelle: '', cases: 1 }]);
+  assert.deepEqual(lignesDeSection(1, 192), []);
+  assert.deepEqual(lignesDeSection(2, 10), []);
+});
+
+// ---- Lot v0.7 — les codes ---------------------------------------------------------------------------------
+
+test('basculerCode : absent → ajouté à la fin ; présent → retiré ; l\'origine ne change pas', () => {
+  const p = perso();
+  const un = basculerCode(p, 'Azur');
+  const deux = basculerCode(un, 'Aide');
+  assert.deepEqual(deux.codes, ['Azur', 'Aide']);
+  assert.deepEqual(basculerCode(deux, 'Azur').codes, ['Aide']);
+  assert.deepEqual(p.codes, []);
+  assert.deepEqual(un.codes, ['Azur']);
+});
+
+test('basculerCode : un code vide ou qui n\'est pas une chaîne → null', () => {
+  const p = perso();
+  for (const code of ['', null, undefined, 3, ['Aide']]) assert.equal(basculerCode(p, code), null, String(code));
+});
+
+// ---- Lot v0.7 — les cases de section ----------------------------------------------------------------------
+
+test('cocherCase : une case au milieu se coche seule ; les rangs triés ; la ligne réécrite à la fin', () => {
+  const p = perso();
+  p.cases = [{ livre: 1, section: 19, libelle: '', rangs: [0] }, { livre: 1, section: 91, libelle: '', rangs: [0] }];
+  const apres = cocherCase(p, 1, 19, '', 3, 2, true);
+  assert.deepEqual(apres.cases, [{ livre: 1, section: 91, libelle: '', rangs: [0] }, { livre: 1, section: 19, libelle: '', rangs: [0, 2] }]);
+  const milieu = cocherCase(apres, 1, 19, '', 3, 1, true);
+  assert.deepEqual(milieu.cases.at(-1).rangs, [0, 1, 2]);
+  assert.deepEqual(p.cases[0].rangs, [0]);
+  const neuve = cocherCase(p, 1, 10, 'chez_vous', 1, 0, true);
+  assert.deepEqual(neuve.cases.at(-1), { livre: 1, section: 10, libelle: 'chez_vous', rangs: [0] });
+  assert.deepEqual(rangsCoches(neuve, 1, 10, '', 4), []);
+});
+
+test('cocherCase : décocher la dernière case retire la ligne ; un champ inconnu d\'une ligne gardée reste', () => {
+  const p = perso();
+  p.cases = [{ livre: 1, section: 19, libelle: '', rangs: [0, 2], note: 'x' }, { livre: 1, section: 91, libelle: '', rangs: [0] }];
+  assert.deepEqual(cocherCase(p, 1, 91, '', 1, 0, false).cases, [p.cases[0]]);
+  assert.deepEqual(cocherCase(p, 1, 19, '', 3, 0, false).cases.at(-1), { livre: 1, section: 19, libelle: '', rangs: [2], note: 'x' });
+});
+
+test('cocherCase : rang hors de [0, max[ ou non entier → null ; déjà dans l\'état demandé → null', () => {
+  const p = perso();
+  p.cases = [{ livre: 1, section: 19, libelle: '', rangs: [0] }];
+  for (const rang of [-1, 3, 1.5, '1', null]) assert.equal(cocherCase(p, 1, 19, '', 3, rang, true), null, String(rang));
+  assert.equal(cocherCase(p, 1, 19, '', 3, 0, true), null);
+  assert.equal(cocherCase(p, 1, 19, '', 3, 1, false), null);
+  assert.equal(cocherCase(p, 1, 91, '', 1, 0, false), null);
+});
+
+test('rangsCoches : les rangs < max, croissants ; [] sans la ligne ; le libellé distingue les lignes', () => {
+  const p = perso();
+  p.cases = [{ livre: 1, section: 10, libelle: '', rangs: [0, 3, 5] }, { livre: 1, section: 10, libelle: 'chez_vous', rangs: [0] }];
+  assert.deepEqual(rangsCoches(p, 1, 10, '', 4), [0, 3]);
+  assert.deepEqual(rangsCoches(p, 1, 10, 'chez_vous', 1), [0]);
+  assert.deepEqual(rangsCoches(p, 1, 19, '', 3), []);
+  assert.deepEqual(rangsCoches(p, 2, 10, '', 4), []);
+});
+
+// ---- Lot v0.7 — les codes liés d'une quête ----------------------------------------------------------------
+
+test('ajouterCodeQuete : à la fin ; doublon, code vide ou index hors de la liste → null', () => {
+  const p = ajouterQuete(ajouterQuete(perso(), 'Une'), 'Deux');
+  const un = ajouterCodeQuete(p, 1, 'Alissia');
+  const deux = ajouterCodeQuete(un, 1, 'Aide');
+  assert.deepEqual(deux.quetes[1].codes, ['Alissia', 'Aide']);
+  assert.deepEqual(deux.quetes[0].codes, []);
+  assert.deepEqual(p.quetes[1].codes, []);
+  assert.equal(ajouterCodeQuete(deux, 1, 'Aide'), null);
+  for (const code of ['', null, 4]) assert.equal(ajouterCodeQuete(p, 0, code), null, String(code));
+  for (const index of [-1, 2, 9]) assert.equal(ajouterCodeQuete(p, index, 'Aide'), null, String(index));
+});
+
+test('retirerCodeQuete : retire le rang ; index ou rang hors de la liste → null', () => {
+  const p = ajouterCodeQuete(ajouterCodeQuete(ajouterQuete(perso(), 'Une'), 0, 'Aide'), 0, 'Alissia');
+  assert.deepEqual(retirerCodeQuete(p, 0, 0).quetes[0].codes, ['Alissia']);
+  assert.deepEqual(p.quetes[0].codes, ['Aide', 'Alissia']);
+  for (const [index, rang] of [[0, 2], [0, -1], [1, 0], [-1, 0]]) assert.equal(retirerCodeQuete(p, index, rang), null, `${index} / ${rang}`);
 });

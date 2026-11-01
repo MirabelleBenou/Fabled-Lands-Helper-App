@@ -192,5 +192,17 @@
   "journal.adv_invalide": "Enter the opponent's name, Combat, Defence and Stamina.",
   "journal.adv_nouveau": "New opponent",
   "journal.combats_passes": "Past combats ({n})",
-  "journal.passe_chiffres": "Combat {combat}, Defence {defense}, Stamina {actuelle} / {max}"
+  "journal.passe_chiffres": "Combat {combat}, Defence {defense}, Stamina {actuelle} / {max}",
+  "feuille.codes": "Codewords",
+  "codes.source": "Lists from the adventure booklet, book {livre}.",
+  "codes.titre": "Codewords",
+  "codes.compte": "{n} of {total}",
+  "cases.titre": "Section tick boxes",
+  "cases.compte": "{n} of {total} ticked",
+  "cases.chez_vous": "at home",
+  "cases.case": "Section {section}, box {n}",
+  "cases.cours": "Tick boxes",
+  "journal.codes": "Linked codewords",
+  "journal.codes_vide": "No linked codeword.",
+  "journal.code_choisir": "Choose a codeword"
 }

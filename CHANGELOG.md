@@ -3,6 +3,21 @@
 *Une entrée par version, la plus récente en tête ; sous chaque entrée, les fichiers touchés, en sous-puces à deux
 espaces de retrait.*
 
+## v0.7 — 2026-11-01
+
+- Les codes et les cases de section du livret d'aventure, pour le livre 1 : une rubrique « Codes » sur la fiche, avec les 35 codes à cocher puis les 42 cases de section, ligne par ligne ; les cases de la section en cours s'affichent aussi sous son numéro, dans Aventure, et s'y cochent ; une quête peut lier des codes, choisis dans la liste et montrés en pastilles. Chaque case se coche seule. L'application ne vérifie rien (sauvegarde au schéma 5).
+  - `js/livret.js` : neuf, les listes du livret du livre 1 (`LIVRETS` : 35 codes, 37 lignes de cases) et `lignesDeSection`
+  - `js/sauvegarde.js` : le schéma 5, la complétion de `codes`, `cases` et des codes liés de chaque quête, `personnageNeuf` avec `codes` et `cases` vides
+  - `js/regles.js` : `basculerCode`, `rangsCoches`, `cocherCase`, `ajouterCodeQuete`, `retirerCodeQuete` ; `ajouterQuete` pose `codes: []`
+  - `js/feuille.js` : la rubrique Codes (les codes, puis les cases de section), les cases sous la section en cours (Aventure), les codes liés sur la carte d'une quête et dans son éditeur
+  - `js/app.js` : la rubrique `codes`, la route `#/perso/<id>/codes`
+  - `js/precache.js` : `js/livret.js` dans le cache hors ligne (28 entrées)
+  - `css/app.css` : la feuille de style du lot
+  - `js/version.js` : `v0.7` (le cache hors ligne devient `flh-v0.7`)
+  - `i18n/fr.json`, `i18n/en.json` : 12 clés neuves (206 clés)
+  - `tests/sauvegarde.test.js`, `tests/regles.test.js` : 7 et 11 tests neufs ; les tests du schéma 4 comme schéma courant mis au schéma 5, et ceux de la forme d'une quête
+  - `CHANGELOG.md` : cette entrée
+
 ## v0.6 — 2026-10-25
 
 - Le journal : deux rubriques de plus sur la fiche. Aventure : la section en cours, que « Aller » change en inscrivant la section quittée dans le chemin parcouru (un toucher sur une section du chemin y ramène) ; les quêtes, avec leurs personnages, leurs sections importantes et la case « Terminée » ; les notes, rattachées à la section et à la date où elles ont été écrites. Combats : le Combat, la Défense et l'Endurance du personnage, celle de la feuille ; un adversaire par carte, avec son Endurance à − / + ; « Fin du combat » le range dans les combats passés. L'application ne calcule rien (sauvegarde au schéma 4).

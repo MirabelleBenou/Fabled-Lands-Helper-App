@@ -660,3 +660,26 @@ input:disabled, .bouton:disabled { opacity: .5; cursor: default; }
 @media (max-width: 520px) {
   .chiffre.endu { margin-left: 0; flex-basis: 100%; }
 }
+
+/* Lot v0.7 — les codes et les cases de section : la rubrique Codes, les cases sous la section en cours, les codes
+   liés d'une quête. */
+.source-listes { margin: -14px 0 4px; font-style: italic; }
+.grille-codes { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.6em, 1fr)); gap: 0 16px; margin: 0; padding: 0; list-style: none; }
+.code { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 17px; color: var(--encre-douce); cursor: pointer; }
+.code.tenu { color: var(--encre); font-weight: 700; }
+.grille-cases { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.8em, 1fr)); gap: 0 12px; margin: 0; padding: 0; list-style: none; }
+.grille-cases .ligne-cases { border-bottom: 1px dashed var(--filet); }
+.grille-cases .ligne-cases.large { grid-column: span 2; }
+.ligne-cases { display: flex; align-items: center; gap: 2px 8px; min-height: 44px; }
+.ligne-numero { min-width: 2.1em; font: 700 19px/1 var(--police-texte); font-variant-numeric: lining-nums tabular-nums; }
+.ligne-cases.en-cours .ligne-numero { color: var(--accent); }
+.ligne-libelle { font-size: 15px; font-style: italic; color: var(--encre-douce); }
+.cases { display: inline-flex; }
+.zone-case { display: inline-grid; place-content: center; width: 44px; height: 44px; cursor: pointer; }
+.cases-cours { display: flex; flex-wrap: wrap; align-items: center; gap: 0 18px; flex-basis: 100%; order: 1; }
+@media (max-width: 520px) { .cases-cours { order: 0; } }
+.quete-codes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0 0 4px; }
+.puce.code-lie { min-height: 32px; font-style: normal; }
+.puce.code-lie.tenu { color: var(--accent-encre); background: var(--accent); border-color: var(--accent); }
+.ajout-code { display: grid; grid-template-columns: minmax(0, 14em) auto; gap: 8px; justify-content: start; }
+@media (max-width: 520px) { .ajout-code { grid-template-columns: minmax(0, 1fr) auto; justify-content: stretch; } }
