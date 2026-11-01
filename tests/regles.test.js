@@ -1,19 +1,25 @@
 // Lot v0.3 — tests des règles de calcul de la feuille d'aventure et de leurs bornes (js/regles.js).
 // Lot v0.6 — les transformations du journal : la section en cours et le chemin, les quêtes, les notes, les combats.
 // Lot v0.7 — les listes du livret (js/livret.js), les codes et les cases de section, les codes liés d'une quête.
+// Lot v0.8 — les biens : les lieux (stockées, investissements, dépôts), leurs sommes et leurs objets, le navire.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import {
   CIBLES,
   COMPETENCES,
+  EQUIPAGES,
   MAX_HISTORIQUE,
   MAX_POSSESSIONS,
+  acquerirNavire,
   ajouterAdversaire,
   ajouterBonus,
+  ajouterCargaison,
   ajouterCodeQuete,
   ajouterEntree,
+  ajouterLieu,
   ajouterNote,
+  ajouterObjetStocke,
   ajouterPossession,
   ajouterQuete,
   ajouterSectionQuete,
@@ -28,18 +34,24 @@ import {
   changerEnduranceAdversaire,
   changerEnduranceMax,
   changerNiveau,
+  changerSomme,
   cocherCase,
   defense,
   entierSaisi,
   feuilleLibre,
   finirCombat,
   modifierAdversaire,
+  modifierLieu,
+  modifierNavire,
   modifierQuete,
   operationBourse,
   rangsCoches,
   retirerBonus,
+  retirerCargaison,
   retirerCodeQuete,
   retirerDeListe,
+  retirerNavire,
+  retirerObjetStocke,
   retirerSectionQuete,
   signe,
   totalCompetence,
@@ -611,4 +623,157 @@ test('retirerCodeQuete : retire le rang ; index ou rang hors de la liste → nul
   assert.deepEqual(retirerCodeQuete(p, 0, 0).quetes[0].codes, ['Alissia']);
   assert.deepEqual(p.quetes[0].codes, ['Aide', 'Alissia']);
   for (const [index, rang] of [[0, 2], [0, -1], [1, 0], [-1, 0]]) assert.equal(retirerCodeQuete(p, index, rang), null, `${index} / ${rang}`);
+});
+
+// ---- Lot v0.8 — les biens ---------------------------------------------------------------------------------
+
+// Un navire saisi : le Brick « La Mouette », équipage moyen, trois unités de cargaison au plus.
+const NAVIRE = { nom: ' La Mouette ', type: 'Brick', equipage: 'moyen', cargaison_max: '3', amarrage: 'Le port' };
+
+test('EQUIPAGES : mauvais, moyen, bon, hors-pair', () => {
+  assert.deepEqual(EQUIPAGES, ['mauvais', 'moyen', 'bon', 'hors-pair']);
+});
+
+test('ajouterLieu : la forme exacte de l\'entrée pour chacune des trois listes, clés dans l\'ordre ; à la fin', () => {
+  const p = perso();
+  const saisie = { lieu: '  Port  ', livre: '1', section: ' 42 ', somme: '200', conditions: ' Retrait libre ' };
+  const stockee = ajouterLieu(p, 'stockees', saisie).stockees;
+  assert.deepEqual(stockee, [{ lieu: 'Port', livre: 1, section: 42, objets: [] }]);
+  assert.deepEqual(Object.keys(stockee[0]), ['lieu', 'livre', 'section', 'objets']);
+  const investissement = ajouterLieu(p, 'investissements', saisie).investissements;
+  assert.deepEqual(investissement, [{ lieu: 'Port', livre: 1, section: 42, somme: 200 }]);
+  assert.deepEqual(Object.keys(investissement[0]), ['lieu', 'livre', 'section', 'somme']);
+  const depot = ajouterLieu(p, 'depots', saisie).depots;
+  assert.deepEqual(depot, [{ lieu: 'Port', livre: 1, section: 42, conditions: 'Retrait libre', somme: 200 }]);
+  assert.deepEqual(Object.keys(depot[0]), ['lieu', 'livre', 'section', 'conditions', 'somme']);
+  const deux = ajouterLieu(ajouterLieu(p, 'depots', saisie), 'depots', { lieu: 'Temple' });
+  assert.deepEqual(deux.depots.map((e) => e.lieu), ['Port', 'Temple']);
+  assert.deepEqual(p.stockees, []);
+});
+
+test('ajouterLieu : lieu vide → null ; livre et section vides ou invalides → null sans refus', () => {
+  const p = perso();
+  for (const lieu of ['', '   ', undefined]) assert.equal(ajouterLieu(p, 'stockees', { lieu }), null, String(lieu));
+  const lu = ajouterLieu(p, 'stockees', { lieu: 'Grotte', livre: '0', section: 'x' }).stockees[0];
+  assert.deepEqual(lu, { lieu: 'Grotte', livre: null, section: null, objets: [] });
+  assert.deepEqual(ajouterLieu(p, 'depots', { lieu: 'Grotte', livre: '', section: '-3' }).depots[0],
+    { lieu: 'Grotte', livre: null, section: null, conditions: '', somme: 0 });
+});
+
+test('ajouterLieu : somme vide → 0 ; somme -1 ou non entière → null', () => {
+  const p = perso();
+  assert.equal(ajouterLieu(p, 'investissements', { lieu: 'Guilde', somme: '' }).investissements[0].somme, 0);
+  assert.equal(ajouterLieu(p, 'depots', { lieu: 'Banque', somme: '  ' }).depots[0].somme, 0);
+  for (const somme of ['-1', '2.5', 'dix']) {
+    assert.equal(ajouterLieu(p, 'investissements', { lieu: 'Guilde', somme }), null, somme);
+    assert.equal(ajouterLieu(p, 'depots', { lieu: 'Banque', somme }), null, somme);
+  }
+});
+
+test('modifierLieu : les champs saisis remplacent ; les objets d\'un lieu de stockage et les champs inconnus restent', () => {
+  const p = perso();
+  p.stockees = [{ lieu: 'Port', livre: 1, section: 42, objets: ['Corde', 'Lanterne'], cle: 'x' }];
+  const apres = modifierLieu(p, 'stockees', 0, { lieu: 'Chambre', livre: '2', section: '' });
+  assert.deepEqual(apres.stockees, [{ lieu: 'Chambre', livre: 2, section: null, objets: ['Corde', 'Lanterne'], cle: 'x' }]);
+  p.investissements = [{ lieu: 'Guilde', livre: 1, section: 116, somme: 200 }];
+  assert.deepEqual(modifierLieu(p, 'investissements', 0, { lieu: 'Guilde', livre: '1', section: '116', somme: '500' }).investissements[0].somme, 500);
+  assert.equal(p.stockees[0].lieu, 'Port');
+});
+
+test('modifierLieu : index hors de la liste, lieu vide ou somme invalide → null', () => {
+  const p = perso();
+  p.depots = [{ lieu: 'Banque', livre: 1, section: 192, conditions: '', somme: 150 }];
+  for (const index of [-1, 1, 9]) assert.equal(modifierLieu(p, 'depots', index, { lieu: 'Banque' }), null, String(index));
+  assert.equal(modifierLieu(p, 'depots', 0, { lieu: '' }), null);
+  assert.equal(modifierLieu(p, 'depots', 0, { lieu: 'Banque', somme: '-1' }), null);
+});
+
+test('changerSomme : +1 ; −1 sur une somme nulle → null ; index hors de la liste → null', () => {
+  const p = perso();
+  p.investissements = [{ lieu: 'Guilde', livre: 1, section: 116, somme: 0 }];
+  p.depots = [{ lieu: 'Banque', livre: 1, section: 192, conditions: '', somme: 150 }];
+  assert.equal(changerSomme(p, 'investissements', 0, 1).investissements[0].somme, 1);
+  assert.equal(changerSomme(p, 'investissements', 0, -1), null);
+  assert.equal(changerSomme(p, 'depots', 0, -1).depots[0].somme, 149);
+  assert.equal(changerSomme(p, 'depots', 1, 1), null);
+  assert.equal(p.investissements[0].somme, 0);
+});
+
+test('ajouterObjetStocke : à la fin (doublons permis) ; texte vide ou index hors de la liste → null', () => {
+  const p = perso();
+  p.stockees = [{ lieu: 'Port', livre: 1, section: 42, objets: ['Corde'] }];
+  const apres = ajouterObjetStocke(ajouterObjetStocke(p, 0, ' Lanterne '), 0, 'Corde');
+  assert.deepEqual(apres.stockees[0].objets, ['Corde', 'Lanterne', 'Corde']);
+  assert.deepEqual(p.stockees[0].objets, ['Corde']);
+  for (const texte of ['', '   ', undefined]) assert.equal(ajouterObjetStocke(p, 0, texte), null, String(texte));
+  for (const index of [-1, 1]) assert.equal(ajouterObjetStocke(p, index, 'Corde'), null, String(index));
+});
+
+test('retirerObjetStocke : retire le rang ; index ou rang hors de sa liste → null', () => {
+  const p = perso();
+  p.stockees = [{ lieu: 'Port', livre: 1, section: 42, objets: ['Corde', 'Lanterne'] }];
+  assert.deepEqual(retirerObjetStocke(p, 0, 0).stockees[0].objets, ['Lanterne']);
+  for (const [index, rang] of [[0, 2], [0, -1], [1, 0], [-1, 0]]) assert.equal(retirerObjetStocke(p, index, rang), null, `${index} / ${rang}`);
+});
+
+test('acquerirNavire : la forme exacte ; un second → null ; équipage inconnu, nom vide ou cargaison invalide → null', () => {
+  const p = perso();
+  const avec = acquerirNavire(p, NAVIRE);
+  assert.deepEqual(avec.navire, { nom: 'La Mouette', type: 'Brick', equipage: 'moyen', cargaison_max: 3, amarrage: 'Le port', cargaison: [] });
+  assert.deepEqual(Object.keys(avec.navire), ['nom', 'type', 'equipage', 'cargaison_max', 'amarrage', 'cargaison']);
+  assert.equal(p.navire, null);
+  assert.equal(acquerirNavire(avec, NAVIRE), null);
+  for (const equipage of ['excellent', '', undefined, 'Moyen']) assert.equal(acquerirNavire(p, { ...NAVIRE, equipage }), null, String(equipage));
+  assert.equal(acquerirNavire(p, { ...NAVIRE, nom: '  ' }), null);
+  for (const max of ['-1', '1.5', 'trois']) assert.equal(acquerirNavire(p, { ...NAVIRE, cargaison_max: max }), null, max);
+  assert.equal(acquerirNavire(p, { nom: 'Le Retour', equipage: 'moyen', cargaison_max: '' }).navire.cargaison_max, 0);
+});
+
+test('modifierNavire : les cinq champs changent, la cargaison et les champs inconnus restent ; sans navire ou refus → null', () => {
+  const p = perso();
+  assert.equal(modifierNavire(p, NAVIRE), null);
+  p.navire = { nom: 'La Mouette', type: 'Brick', equipage: 'moyen', cargaison_max: 3, amarrage: 'Le port', cargaison: ['Fourrures'], pavillon: 'gris' };
+  const apres = modifierNavire(p, { nom: 'Le Vif', type: '', equipage: 'bon', cargaison_max: '1', amarrage: '' });
+  assert.deepEqual(apres.navire, { nom: 'Le Vif', type: '', equipage: 'bon', cargaison_max: 1, amarrage: '', cargaison: ['Fourrures'], pavillon: 'gris' });
+  assert.equal(modifierNavire(p, { ...NAVIRE, equipage: 'x' }), null);
+  assert.equal(p.navire.nom, 'La Mouette');
+});
+
+test('retirerNavire : navire = null ; sans navire → null', () => {
+  const avec = acquerirNavire(perso(), NAVIRE);
+  assert.equal(retirerNavire(avec).navire, null);
+  assert.notEqual(avec.navire, null);
+  assert.equal(retirerNavire(perso()), null);
+});
+
+test('ajouterCargaison : à la fin, doublons permis ; refusée à cargaison_max, texte vide ou sans navire', () => {
+  assert.equal(ajouterCargaison(perso(), 'Épices'), null);
+  let p = acquerirNavire(perso(), NAVIRE);
+  p = ajouterCargaison(ajouterCargaison(p, ' Fourrures '), 'Fourrures');
+  assert.deepEqual(p.navire.cargaison, ['Fourrures', 'Fourrures']);
+  assert.equal(ajouterCargaison(p, ''), null);
+  const plein = ajouterCargaison(p, 'Épices');
+  assert.deepEqual(plein.navire.cargaison, ['Fourrures', 'Fourrures', 'Épices']);
+  assert.equal(ajouterCargaison(plein, 'Soie'), null);
+  // Une cargaison maximale abaissée sous le nombre d'unités ne retire rien.
+  const abaisse = modifierNavire(plein, { ...NAVIRE, cargaison_max: '1' });
+  assert.equal(abaisse.navire.cargaison.length, 3);
+  assert.equal(ajouterCargaison(abaisse, 'Soie'), null);
+});
+
+test('retirerCargaison : retire le rang ; sans navire ou rang hors de la liste → null', () => {
+  const p = ajouterCargaison(ajouterCargaison(acquerirNavire(perso(), NAVIRE), 'Fourrures'), 'Épices');
+  assert.deepEqual(retirerCargaison(p, 0).navire.cargaison, ['Épices']);
+  assert.deepEqual(p.navire.cargaison, ['Fourrures', 'Épices']);
+  for (const rang of [-1, 2]) assert.equal(retirerCargaison(p, rang), null, String(rang));
+  assert.equal(retirerCargaison(perso(), 0), null);
+});
+
+test('retirerDeListe sert aussi pour les possessions stockées, les investissements et les dépôts', () => {
+  let p = ajouterLieu(ajouterLieu(perso(), 'stockees', { lieu: 'Port' }), 'stockees', { lieu: 'Grotte' });
+  p = ajouterLieu(ajouterLieu(p, 'investissements', { lieu: 'Guilde' }), 'depots', { lieu: 'Banque' });
+  assert.deepEqual(retirerDeListe(p, 'stockees', 0).stockees.map((e) => e.lieu), ['Grotte']);
+  assert.deepEqual(retirerDeListe(p, 'investissements', 0).investissements, []);
+  assert.deepEqual(retirerDeListe(p, 'depots', 0).depots, []);
+  assert.equal(retirerDeListe(p, 'depots', 1), null);
 });

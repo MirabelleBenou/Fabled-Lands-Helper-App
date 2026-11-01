@@ -6,10 +6,11 @@
 // d'un objet transporté passent sur cet objet (le rattachement, depuis le schéma 1 ou 2 seulement).
 // Lot v0.6 — le schéma 4 : le journal, quatre listes de plus (historique, quêtes, notes, combats), et leur complétion.
 // Lot v0.7 — le schéma 5 : les codes et les cases de section cochés, les codes liés d'une quête, et leur complétion.
-import { CIBLES, COMPETENCES, MAX_HISTORIQUE } from './regles.js';
+// Lot v0.8 — le schéma 6 : les biens (possessions stockées, investissements, dépôts, navire), et leur complétion.
+import { CIBLES, COMPETENCES, EQUIPAGES, MAX_HISTORIQUE } from './regles.js';
 
 export const FORMAT = 'fabled-lands-helper';
-export const SCHEMA = 5;
+export const SCHEMA = 6;
 
 const EPOQUE_ZERO = '1970-01-01T00:00:00.000Z';
 
@@ -160,8 +161,33 @@ function completerLigneCases(e) {
 
 const completerCases = (valeur) => garder(valeur, estObjet).map(completerLigneCases).filter((e) => e !== null);
 
+// Lot v0.8 — les biens. Un livre ou une section d'un lieu : un entier ≥ 1, sinon null.
+const repereOuNul = (valeur) => (Number.isInteger(valeur) && valeur >= 1 ? valeur : null);
+
+// Une liste de lieux (stockées, investissements, dépôts) : une entrée est gardée si c'est un objet au lieu non vide,
+// ses champs inconnus conservés ; `completerEntree` complète ses champs propres.
+const completerLieux = (valeur, completerEntree) => garder(valeur, (e) => estObjet(e) && estChaineNonVide(e.lieu))
+  .map((e) => completerEntree({ ...e, livre: repereOuNul(e.livre), section: repereOuNul(e.section) }));
+
+const completerStockee = (e) => ({ ...e, objets: completerTextes(e.objets) });
+const completerInvestissement = (e) => ({ ...e, somme: estPositif(e.somme) ? e.somme : 0 });
+const completerDepot = (e) => ({ ...e, conditions: texteOuVide(e.conditions), somme: estPositif(e.somme) ? e.somme : 0 });
+
+// Le navire : gardé si c'est un objet au nom non vide, ses champs inconnus conservés ; sinon null.
+function completerNavire(valeur) {
+  if (!estObjet(valeur) || !estChaineNonVide(valeur.nom)) return null;
+  return {
+    ...valeur,
+    type: texteOuVide(valeur.type),
+    equipage: EQUIPAGES.includes(valeur.equipage) ? valeur.equipage : 'moyen',
+    cargaison_max: estPositif(valeur.cargaison_max) ? valeur.cargaison_max : 0,
+    amarrage: texteOuVide(valeur.amarrage),
+    cargaison: completerTextes(valeur.cargaison),
+  };
+}
+
 // Un personnage lu (d'un fichier importé ou du stockage) : complété des valeurs par défaut manquantes, au schéma 3
-// (lot v0.4), puis au schéma 4 (lot v0.6), puis au schéma 5 (lot v0.7), ses champs inconnus conservés tels quels ; une copie qui ne partage rien avec `brut`. Lève une
+// (lot v0.4), puis au schéma 4 (lot v0.6), puis au schéma 5 (lot v0.7), puis au schéma 6 (lot v0.8), ses champs inconnus conservés tels quels ; une copie qui ne partage rien avec `brut`. Lève une
 // exception si le personnage n'a pas d'id ou pas de nom.
 export function completerPersonnage(brut, reference = EPOQUE_ZERO) {
   if (!estObjet(brut) || !estChaineNonVide(brut.id) || !estChaineNonVide(brut.nom)) {
@@ -197,10 +223,15 @@ export function completerPersonnage(brut, reference = EPOQUE_ZERO) {
   // Lot v0.7 — les codes et les cases de section.
   personnage.codes = completerCodes(personnage.codes);
   personnage.cases = completerCases(personnage.cases);
+  // Lot v0.8 — les biens.
+  personnage.stockees = completerLieux(personnage.stockees, completerStockee);
+  personnage.investissements = completerLieux(personnage.investissements, completerInvestissement);
+  personnage.depots = completerLieux(personnage.depots, completerDepot);
+  personnage.navire = completerNavire(personnage.navire);
   return personnage;
 }
 
-// Rend { schema: SCHEMA, personnages } à partir de l'objet JSON d'un fichier exporté (schéma 1 à 5),
+// Rend { schema: SCHEMA, personnages } à partir de l'objet JSON d'un fichier exporté (schéma 1 à 6),
 // ou lève une exception si le fichier est illisible (code « SCHEMA_RECENT » s'il vient d'un schéma plus récent).
 export function lire(objet) {
   if (!estObjet(objet)) throw new Error('sauvegarde illisible');
@@ -229,7 +260,8 @@ export function nomFichierExport(maintenant = new Date()) {
 }
 
 // Un personnage neuf : niveau 1, livre 1 section 1 ; lot v0.3 — sa feuille aux valeurs neutres du schéma 2 ;
-// lot v0.6 — les quatre listes du journal, vides ; lot v0.7 — les codes et les cases de section, vides.
+// lot v0.6 — les quatre listes du journal, vides ; lot v0.7 — les codes et les cases de section, vides ;
+// lot v0.8 — les biens : trois listes vides, pas de navire.
 export function personnageNeuf(nom, profession, maintenant = new Date(), id = crypto.randomUUID()) {
   const iso = maintenant.toISOString();
   return {
@@ -257,5 +289,9 @@ export function personnageNeuf(nom, profession, maintenant = new Date(), id = cr
     combats: [],
     codes: [],
     cases: [],
+    stockees: [],
+    investissements: [],
+    depots: [],
+    navire: null,
   };
 }

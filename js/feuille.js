@@ -9,6 +9,9 @@
 // Lot v0.7 — les codes et les cases de section : une sixième rubrique, Codes (les codes du livret, puis ses cases de
 // section) ; les cases de la section en cours sous son numéro (Aventure) ; les codes liés d'une quête. L'écran ne
 // vérifie rien : chaque case se coche et se décoche seule.
+// Lot v0.8 — les biens : une septième rubrique, Biens (les investissements, les dépôts, le navire) ; dans Possessions,
+// sous les possessions transportées, les possessions stockées. L'écran ne calcule rien. Après un toucher, le focus
+// revient à l'élément touché (son rang parmi ceux du même data-test).
 import { barreDes } from './des.js';
 import { t } from './i18n.js';
 import { LIENS } from './liens.js';
@@ -17,12 +20,17 @@ import { PRETIRES, personnagePretire, pretireParId } from './pretires.js';
 import {
   CIBLES,
   COMPETENCES,
+  EQUIPAGES,
   MAX_POSSESSIONS,
+  acquerirNavire,
   ajouterAdversaire,
   ajouterBonus,
+  ajouterCargaison,
   ajouterCodeQuete,
   ajouterEntree,
+  ajouterLieu,
   ajouterNote,
+  ajouterObjetStocke,
   ajouterPossession,
   ajouterQuete,
   ajouterSectionQuete,
@@ -37,18 +45,24 @@ import {
   changerEnduranceAdversaire,
   changerEnduranceMax,
   changerNiveau,
+  changerSomme,
   cocherCase,
   defense,
   entierSaisi,
   feuilleLibre,
   finirCombat,
   modifierAdversaire,
+  modifierLieu,
+  modifierNavire,
   modifierQuete,
   operationBourse,
   rangsCoches,
   retirerBonus,
+  retirerCargaison,
   retirerCodeQuete,
   retirerDeListe,
+  retirerNavire,
+  retirerObjetStocke,
   retirerSectionQuete,
   signe,
   totalCompetence,
@@ -86,6 +100,8 @@ const RUBRIQUES = [
   ['combats', () => t('feuille.combats')],
   // Lot v0.7 — les codes et les cases de section.
   ['codes', () => t('feuille.codes')],
+  // Lot v0.8 — les biens.
+  ['biens', () => t('feuille.biens')],
 ];
 const DEPLIABLES = [...COMPETENCES, 'defense', 'endurance'];
 // Lot v0.4 — le nom d'une cible de bonus : la compétence, ou la Défense.
@@ -231,9 +247,13 @@ function montrerErreurEcriture() {
 // `transformer(personnage)` rend le personnage changé, ou null (rien à faire). Le changement s'enregistre
 // (modifie_le = maintenant), puis l'écran se rend à nouveau (sauf `rendre: false`) et le focus revient à l'élément
 // qui porte le data-test du déclencheur. Un enregistrement qui échoue laisse l'écran tel quel, avec l'erreur.
+// Lot v0.8 — le focus va à l'élément de ce data-test au même rang que le déclencheur (noté avant d'écrire), ou au
+// dernier s'il y en a moins.
 // Lot v0.4 — `ancre` : une fois écrit, l'adresse va à cette ancre (l'écran s'y rend), au lieu de se rendre sur place.
 async function changer(contexte, id, transformer, { declencheur = null, rendre = true, ancre = null } = {}) {
   const test = declencheur?.dataset?.test;
+  const memeTest = () => document.querySelectorAll(`#ecran [data-test="${test}"]`);
+  const rang = test ? Math.max([...memeTest()].indexOf(declencheur), 0) : 0;
   const travail = file.then(async () => {
     let actuel;
     try {
@@ -261,7 +281,10 @@ async function changer(contexte, id, transformer, { declencheur = null, rendre =
   }
   if (issue === 'disparu' || (issue === 'ecrit' && rendre)) {
     await contexte.rafraichir();
-    if (test) document.querySelector(`#ecran [data-test="${test}"]`)?.focus({ preventScroll: true });
+    if (test) {
+      const elements = memeTest();
+      elements[Math.min(rang, elements.length - 1)]?.focus({ preventScroll: true });
+    }
   }
 }
 
@@ -541,7 +564,8 @@ function ajoutPossession(contexte, p, plein) {
 }
 
 // Lot v0.4 — `ouvert` : l'index de l'objet dont l'éditeur est ouvert (null : aucun, ou un index hors de la liste).
-function rubriquePossessions(contexte, p, base, ouvert) {
+// Lot v0.8 — `lieuOuvert` : le quatrième morceau de l'adresse (s<n> ouvre le lieu de stockage n), ou null.
+function rubriquePossessions(contexte, p, base, ouvert, lieuOuvert) {
   const plein = p.possessions.length >= MAX_POSSESSIONS;
   const enEdition = Number.isInteger(ouvert) && ouvert < p.possessions.length ? ouvert : null;
   const noeuds = [
@@ -571,6 +595,8 @@ function rubriquePossessions(contexte, p, base, ouvert) {
   }
   noeuds.push(ajoutPossession(contexte, p, plein));
   if (plein) noeuds.push(el('p', { classe: 'legende', test: 'plein', texte: t('feuille.possessions_plein') }));
+  // Lot v0.8 — les possessions stockées.
+  noeuds.push(blocLieux(contexte, p, base, 'stockees', indexOuvert(lieuOuvert, 's', p.stockees)));
   return noeuds;
 }
 
@@ -669,9 +695,9 @@ function casesLigne(contexte, p, livre, ligne) {
 const lieu = (livre, section) => t('journal.lieu', { livre, section });
 
 // L'index ouvert par l'adresse : `ouvert` s'écrit exactement `lettre` suivie d'un entier sans zéro de tête, et cet
-// entier est un index de `liste` ; sinon null.
+// entier est un index de `liste` ; sinon null. Lot v0.8 — aussi les lettres i, d (Biens) et s (Possessions).
 function indexOuvert(ouvert, lettre, liste) {
-  if (typeof ouvert !== 'string' || !/^[qa](0|[1-9][0-9]*)$/.test(ouvert) || ouvert[0] !== lettre) return null;
+  if (typeof ouvert !== 'string' || !/^[qaids](0|[1-9][0-9]*)$/.test(ouvert) || ouvert[0] !== lettre) return null;
   const n = Number(ouvert.slice(1));
   return n < liste.length ? n : null;
 }
@@ -1089,10 +1115,280 @@ function rubriqueCodes(contexte, p) {
   return [el('p', { classe: 'legende source-listes', texte: t('codes.source', { livre: LIVRE_LISTES }) }), blocCodes, blocCases];
 }
 
+// ---- Lot v0.8 — les biens : les lieux (stockées, investissements, dépôts) et le navire ------------------
+
+// Les trois listes de lieux : la lettre de l'adresse qui ouvre une carte, le titre, la légende vide, l'intitulé de
+// l'ajout, le « retirer » de l'éditeur.
+const LISTES_LIEUX = {
+  investissements: {
+    lettre: 'i',
+    titre: () => t('biens.investissements'),
+    vide: () => t('biens.investissements_vide'),
+    ajout: () => t('biens.investissement_nouveau'),
+    retirer: () => t('biens.investissement_retirer'),
+  },
+  depots: {
+    lettre: 'd',
+    titre: () => t('biens.depots'),
+    vide: () => t('biens.depots_vide'),
+    ajout: () => t('biens.depot_nouveau'),
+    retirer: () => t('biens.depot_retirer'),
+  },
+  stockees: {
+    lettre: 's',
+    titre: () => t('biens.stockees'),
+    vide: () => t('biens.stockees_vide'),
+    ajout: () => t('biens.stockee_nouveau'),
+    retirer: () => t('biens.lieu_retirer'),
+  },
+};
+
+// Le nom d'une qualité d'équipage : une table code → texte.
+const NOM_EQUIPAGE = {
+  mauvais: () => t('biens.equipage_mauvais'),
+  moyen: () => t('biens.equipage_moyen'),
+  bon: () => t('biens.equipage_bon'),
+  'hors-pair': () => t('biens.equipage_hors_pair'),
+};
+
+// Un champ texte d'un lieu ou du navire : son libellé en placeholder et en aria-label.
+function champTexteBien(test, libelle, valeur) {
+  const champ = el('input', { type: 'text', test, placeholder: libelle, 'aria-label': libelle });
+  champ.value = valeur;
+  return champ;
+}
+
+// Un champ nombre d'un lieu ou du navire, sa légende au-dessus ; sa valeur en attribut ('' pour null).
+function champNombreBien(test, libelle, valeur) {
+  const champ = el('input', {
+    type: 'number', inputmode: 'numeric', min: '0', test, 'aria-label': libelle, value: valeur === null ? '' : String(valeur),
+  });
+  return { champ, bloc: el('label', {}, el('span', { classe: 'legende', texte: libelle }), champ) };
+}
+
+// Les champs d'un lieu, préfixe `prefixe` : le lieu, le livre, la section, la somme (sauf stockées), les conditions
+// (dépôts seulement). `saisie()` rend { lieu, livre, section, somme, conditions } tels que saisis.
+function champsLieu(prefixe, liste, valeurs) {
+  const nomLieu = champTexteBien(`${prefixe}-lieu`, t('biens.lieu'), valeurs.lieu);
+  const livre = champNombreBien(`${prefixe}-livre`, t('perso.livre'), valeurs.livre);
+  const section = champNombreBien(`${prefixe}-section`, t('perso.section'), valeurs.section);
+  const bloc = el('div', { classe: liste === 'stockees' ? 'champs-lieu sans-somme' : 'champs-lieu' }, nomLieu, livre.bloc, section.bloc);
+  const somme = liste === 'stockees' ? null : champNombreBien(`${prefixe}-somme`, t('biens.somme'), valeurs.somme);
+  if (somme !== null) bloc.append(somme.bloc);
+  const conditions = liste === 'depots' ? champTexteBien(`${prefixe}-conditions`, t('biens.conditions'), valeurs.conditions) : null;
+  if (conditions !== null) bloc.append(conditions);
+  return {
+    bloc,
+    saisie: () => ({
+      lieu: nomLieu.value,
+      livre: livre.champ.value,
+      section: section.champ.value,
+      somme: somme === null ? '' : somme.champ.value,
+      conditions: conditions === null ? '' : conditions.value,
+    }),
+  };
+}
+
+// Un champ texte et son bouton « Ajouter » ; la touche Entrée dans le champ ajoute aussi (le déclencheur est alors le
+// champ). `inactif` : le champ et le bouton sont désactivés.
+function ajoutBien(contexte, id, { testChamp, testBouton, placeholder, libelle, inactif = false }, ajouter) {
+  const champ = el('input', { type: 'text', test: testChamp, placeholder, 'aria-label': libelle });
+  const bouton = el('button', { classe: 'bouton bouton-second', type: 'button', test: testBouton, texte: t('feuille.ajouter') });
+  if (inactif) {
+    champ.setAttribute('disabled', '');
+    bouton.setAttribute('disabled', '');
+  }
+  const ajout = (declencheur) => changer(contexte, id, (q) => ajouter(q, champ.value), { declencheur });
+  bouton.addEventListener('click', () => ajout(bouton));
+  champ.addEventListener('keydown', (evenement) => {
+    if (evenement.key !== 'Enter') return;
+    evenement.preventDefault();
+    ajout(champ);
+  });
+  return el('div', { classe: 'ajout' }, champ, bouton);
+}
+
+// Une transformation refusée le dit dans `erreur` (le texte `texte`) ; acceptée, l'erreur est vidée.
+const avecErreur = (erreur, texte, transformer) => (q) => {
+  const nouveau = transformer(q);
+  erreur.textContent = nouveau === null ? texte : '';
+  return nouveau;
+};
+
+// La carte du lieu `n` de la liste `liste` : son nom et sa pastille, les conditions d'un dépôt, sa somme à − / + ou
+// ses objets, « Modifier » ; ouverte, son éditeur.
+function carteLieu(contexte, p, base, liste, n, ouverte) {
+  const entree = p[liste][n];
+  const { lettre, retirer } = LISTES_LIEUX[liste];
+  const entete = el('div', { classe: 'bien-entete' }, el('p', { classe: 'nom', test: 'bien-nom', texte: entree.lieu }));
+  if (entree.section !== null) {
+    entete.append(pastille(contexte, p, { livre: entree.livre ?? p.section_en_cours.livre, section: entree.section }, 'bien-pas'));
+  }
+  const carte = el('li', { classe: `cadre bien ${liste}`, test: 'bien' }, entete);
+  if (liste === 'depots' && entree.conditions !== '') {
+    carte.append(el('p', { classe: 'conditions' },
+      el('span', { classe: 'legende', texte: t('feuille.etiquette', { libelle: t('biens.conditions') }) }), ` ${entree.conditions}`));
+  }
+  if (liste === 'stockees') {
+    if (entree.objets.length === 0) {
+      carte.append(el('p', { classe: 'legende', texte: t('biens.objets_vide') }));
+    } else {
+      carte.append(el('ul', { classe: 'stock', test: 'objets-stockes' }, ...entree.objets.map((objet, rang) => el('li', {},
+        el('span', { classe: 'objet', texte: objet }),
+        action(boutonRetirer('lien', t('feuille.retirer'), objet), contexte, p.id, (q) => retirerObjetStocke(q, n, rang))))));
+    }
+    carte.append(ajoutBien(contexte, p.id, {
+      testChamp: 'stocke-champ',
+      testBouton: 'stocke-ajouter',
+      placeholder: t('feuille.possession_ajouter'),
+      libelle: t('biens.objet_ajouter', { lieu: entree.lieu }),
+    }, (q, texte) => ajouterObjetStocke(q, n, texte)));
+  } else {
+    const somme = compteur('moyen', [String(entree.somme), el('span', { classe: 'sur', texte: ` ${t('feuille.chardes')}` })],
+      { test: 'somme-moins', libelle: t('biens.somme_moins', { lieu: entree.lieu }) },
+      { test: 'somme-plus', libelle: t('biens.somme_plus', { lieu: entree.lieu }) });
+    action(somme.querySelector('[data-test=somme-moins]'), contexte, p.id, (q) => changerSomme(q, liste, n, -1));
+    action(somme.querySelector('[data-test=somme-plus]'), contexte, p.id, (q) => changerSomme(q, liste, n, 1));
+    carte.append(somme);
+  }
+  carte.append(el('div', { classe: 'actions' },
+    el('a', { classe: 'lien', test: 'bien-modifier', href: ouverte ? base : `${base}/${lettre}${n}`, texte: ouverte ? t('feuille.fermer') : t('feuille.modifier') })));
+  if (!ouverte) return carte;
+  // Écrit, l'adresse revient à la rubrique ; refusé, rien n'est écrit et l'éditeur reste ouvert.
+  const champs = champsLieu('edition', liste, entree);
+  const erreur = el('p', { classe: 'erreur', role: 'alert' });
+  const enregistrer = el('button', { classe: 'bouton', type: 'button', test: 'bien-enregistrer', texte: t('feuille.enregistrer') });
+  action(enregistrer, contexte, p.id, avecErreur(erreur, t('biens.lieu_requis'), (q) => modifierLieu(q, liste, n, champs.saisie())), { ancre: base });
+  carte.append(el('div', { classe: 'editeur', test: 'editeur-bien' },
+    champs.bloc,
+    erreur,
+    el('div', { classe: 'actions' },
+      enregistrer,
+      boutonDeuxTemps(contexte, p.id, { classe: 'lien lien-danger', test: 'bien-retirer', texte: retirer(), nom: entree.lieu },
+        (q) => retirerDeListe(q, liste, n), { ancre: base }))));
+  return carte;
+}
+
+// Le bloc d'une liste de lieux : son titre, ses cartes (ou sa légende vide), puis l'ajout replié. `ouverte` : l'index
+// de la carte ouverte, ou null.
+function blocLieux(contexte, p, base, liste, ouverte) {
+  const { titre, vide, ajout } = LISTES_LIEUX[liste];
+  const section = el('section', { classe: 'bloc', test: liste }, el('h2', { classe: 'rubrique', texte: titre() }));
+  if (p[liste].length === 0) {
+    section.append(el('p', { classe: 'legende', texte: vide() }));
+  } else {
+    section.append(el('ul', { classe: 'entrees' }, ...p[liste].map((_, n) => carteLieu(contexte, p, base, liste, n, n === ouverte))));
+  }
+  const champs = champsLieu(`nouveau-${liste}`, liste, { lieu: '', livre: p.section_en_cours.livre, section: null, somme: null, conditions: '' });
+  const erreur = el('p', { classe: 'erreur', role: 'alert' });
+  const ajouter = el('button', { classe: 'bouton', type: 'button', test: `${liste}-ajouter`, texte: t('feuille.ajouter') });
+  action(ajouter, contexte, p.id, avecErreur(erreur, t('biens.lieu_requis'), (q) => ajouterLieu(q, liste, champs.saisie())));
+  section.append(el('details', { classe: 'ajout-entree', test: `nouveau-${liste}` },
+    el('summary', { classe: 'lien', texte: ajout() }),
+    el('div', { classe: 'champs-entree' }, champs.bloc, erreur, ajouter)));
+  return section;
+}
+
+// Les champs du navire, préfixe `prefixe` : le nom, le type, la qualité de l'équipage, la cargaison maximale, le
+// lieu d'amarrage. `saisie()` rend { nom, type, equipage, cargaison_max, amarrage } tels que saisis.
+function champsNavire(prefixe, valeurs) {
+  const nom = champTexteBien(`${prefixe}-nom`, t('biens.navire_nom'), valeurs.nom);
+  const type = champTexteBien(`${prefixe}-type`, t('biens.navire_type'), valeurs.type);
+  const equipage = el('select', { test: `${prefixe}-equipage`, 'aria-label': t('biens.equipage') },
+    ...EQUIPAGES.map((code) => el('option', { value: code, texte: NOM_EQUIPAGE[code]() })));
+  equipage.value = valeurs.equipage;
+  const max = champNombreBien(`${prefixe}-max`, t('biens.cargaison_max'), valeurs.cargaison_max);
+  const amarrage = champTexteBien(`${prefixe}-amarrage`, t('biens.amarrage'), valeurs.amarrage);
+  return {
+    bloc: el('div', { classe: 'champs-navire' },
+      nom,
+      type,
+      el('label', {}, el('span', { classe: 'legende', texte: t('biens.equipage') }), equipage),
+      max.bloc,
+      amarrage),
+    saisie: () => ({ nom: nom.value, type: type.value, equipage: equipage.value, cargaison_max: max.champ.value, amarrage: amarrage.value }),
+  };
+}
+
+// Le navire : sans navire, la légende et l'ajout replié ; avec, sa carte (son nom, son type, son équipage, son lieu
+// d'amarrage, sa cargaison « n / max », « Modifier ») et, ouvert, son éditeur.
+function blocNavire(contexte, p, base, ouvert) {
+  const section = el('section', { classe: 'bloc', test: 'navire' }, el('h2', { classe: 'rubrique', texte: t('biens.navire') }));
+  const { navire } = p;
+  if (navire === null) {
+    const champs = champsNavire('nouveau-navire', { nom: '', type: '', equipage: 'moyen', cargaison_max: null, amarrage: '' });
+    const erreur = el('p', { classe: 'erreur', role: 'alert' });
+    const ajouter = el('button', { classe: 'bouton', type: 'button', test: 'navire-ajouter', texte: t('feuille.ajouter') });
+    action(ajouter, contexte, p.id, avecErreur(erreur, t('biens.navire_requis'), (q) => acquerirNavire(q, champs.saisie())));
+    section.append(el('p', { classe: 'legende', texte: t('biens.navire_vide') }),
+      el('details', { classe: 'ajout-entree', test: 'nouveau-navire' },
+        el('summary', { classe: 'lien', texte: t('biens.navire_nouveau') }),
+        el('div', { classe: 'champs-entree' }, champs.bloc, erreur, ajouter)));
+    return section;
+  }
+  const entete = el('div', { classe: 'bien-entete' }, el('p', { classe: 'nom', test: 'navire-nom', texte: navire.nom }));
+  if (navire.type !== '') entete.append(el('span', { classe: 'legende navire-type', texte: navire.type }));
+  const carte = el('div', { classe: 'cadre bien navire', test: 'carte-navire' },
+    entete,
+    el('p', { classe: 'navire-detail' },
+      el('span', { classe: 'legende', texte: t('feuille.etiquette', { libelle: t('biens.equipage') }) }), ` ${NOM_EQUIPAGE[navire.equipage]()}`));
+  if (navire.amarrage !== '') {
+    carte.append(el('p', { classe: 'navire-detail' },
+      el('span', { classe: 'legende', texte: t('feuille.etiquette', { libelle: t('biens.amarrage') }) }), ` ${navire.amarrage}`));
+  }
+  const pleine = navire.cargaison.length >= navire.cargaison_max;
+  carte.append(el('p', { classe: 'petit-titre cale' }, t('biens.cargaison'),
+    el('span', { classe: 'compte', test: 'cargaison-compte', texte: ` ${navire.cargaison.length} / ${navire.cargaison_max}` })));
+  if (navire.cargaison.length === 0) {
+    carte.append(el('p', { classe: 'legende', texte: t('biens.cargaison_vide') }));
+  } else {
+    carte.append(el('ol', { classe: 'stock cargaison', test: 'cargaison' }, ...navire.cargaison.map((unite, rang) => el('li', {},
+      el('span', { classe: 'objet', texte: unite }),
+      action(boutonRetirer('lien', t('feuille.retirer'), unite), contexte, p.id, (q) => retirerCargaison(q, rang))))));
+  }
+  carte.append(ajoutBien(contexte, p.id, {
+    testChamp: 'cargaison-champ',
+    testBouton: 'cargaison-ajouter',
+    placeholder: t('biens.cargaison_ajouter'),
+    libelle: t('biens.cargaison_ajouter'),
+    inactif: pleine,
+  }, ajouterCargaison));
+  if (pleine) carte.append(el('p', { classe: 'legende', test: 'cale-pleine', texte: t('biens.cargaison_pleine') }));
+  carte.append(el('div', { classe: 'actions' },
+    el('a', { classe: 'lien', test: 'navire-modifier', href: ouvert ? base : `${base}/n`, texte: ouvert ? t('feuille.fermer') : t('feuille.modifier') })));
+  if (ouvert) {
+    // Écrit, l'adresse revient à la rubrique ; refusé, rien n'est écrit et l'éditeur reste ouvert.
+    const champs = champsNavire('edition-navire', navire);
+    const erreur = el('p', { classe: 'erreur', role: 'alert' });
+    const enregistrer = el('button', { classe: 'bouton', type: 'button', test: 'navire-enregistrer', texte: t('feuille.enregistrer') });
+    action(enregistrer, contexte, p.id, avecErreur(erreur, t('biens.navire_requis'), (q) => modifierNavire(q, champs.saisie())), { ancre: base });
+    carte.append(el('div', { classe: 'editeur', test: 'editeur-navire' },
+      champs.bloc,
+      erreur,
+      el('div', { classe: 'actions' },
+        enregistrer,
+        boutonDeuxTemps(contexte, p.id, { classe: 'lien lien-danger', test: 'navire-retirer', texte: t('biens.navire_retirer'), nom: navire.nom },
+          (q) => retirerNavire(q), { ancre: base }))));
+  }
+  section.append(carte);
+  return section;
+}
+
+// La rubrique Biens : les investissements, les dépôts, puis le navire. `ouvert` : le quatrième morceau de l'adresse
+// (i<n> ouvre l'investissement n, d<n> le dépôt n, n le navire), ou null.
+function rubriqueBiens(contexte, p, base, ouvert) {
+  return [
+    blocLieux(contexte, p, base, 'investissements', indexOuvert(ouvert, 'i', p.investissements)),
+    blocLieux(contexte, p, base, 'depots', indexOuvert(ouvert, 'd', p.depots)),
+    blocNavire(contexte, p, base, ouvert === 'n'),
+  ];
+}
+
 // ---- La fiche ------------------------------------------------------------------------------------------
 
 // La fiche : #/perso/<id>[/<rubrique>[/<déplié>]] ; route = { id, rubrique, deplie, objet, ouvert } (lot v0.4 : `objet`,
-// l'index de l'objet ouvert des Possessions ; lot v0.6 : `ouvert`, la quête ou l'adversaire ouvert).
+// l'index de l'objet ouvert des Possessions ; lot v0.6 : `ouvert`, la quête ou l'adversaire ouvert ; lot v0.8 : aussi le
+// bien ouvert, ou le lieu de stockage ouvert des Possessions).
 export async function vueFiche(contexte, route) {
   await file;
   const p = await lirePersonnage(route.id).catch(() => null);
@@ -1108,11 +1404,12 @@ export async function vueFiche(contexte, route) {
     return lien;
   }));
   let contenu;
-  if (route.rubrique === 'possessions') contenu = rubriquePossessions(contexte, p, `${racine}/possessions`, route.objet);
+  if (route.rubrique === 'possessions') contenu = rubriquePossessions(contexte, p, `${racine}/possessions`, route.objet, route.ouvert);
   else if (route.rubrique === 'cultes') contenu = rubriqueCultes(contexte, p);
   else if (route.rubrique === 'aventure') contenu = rubriqueAventure(contexte, p, `${racine}/aventure`, route.ouvert);
   else if (route.rubrique === 'combats') contenu = rubriqueCombats(contexte, p, `${racine}/combats`, route.ouvert);
   else if (route.rubrique === 'codes') contenu = rubriqueCodes(contexte, p);
+  else if (route.rubrique === 'biens') contenu = rubriqueBiens(contexte, p, `${racine}/biens`, route.ouvert);
   else {
     const deplie = DEPLIABLES.includes(route.deplie) ? route.deplie : null;
     contenu = rubriqueStatistiques(contexte, p, `${racine}/statistiques`, deplie);

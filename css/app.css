@@ -683,3 +683,31 @@ input:disabled, .bouton:disabled { opacity: .5; cursor: default; }
 .puce.code-lie.tenu { color: var(--accent-encre); background: var(--accent); border-color: var(--accent); }
 .ajout-code { display: grid; grid-template-columns: minmax(0, 14em) auto; gap: 8px; justify-content: start; }
 @media (max-width: 520px) { .ajout-code { grid-template-columns: minmax(0, 1fr) auto; justify-content: stretch; } }
+
+/* Lot v0.8 — les biens : la rubrique Biens (investissements, dépôts, le navire) et les possessions stockées. */
+.bien-entete { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; margin-bottom: 6px; }
+.bien-entete .nom { margin: 0; flex: 1 1 10em; }
+.bien .conditions, .navire-detail { margin: 0 0 6px; }
+.bien .compteur { margin: 4px 0 0; }
+.bien .actions { margin: 10px 0 0; justify-content: flex-end; }
+.bien .editeur { margin-top: 12px; padding: 4px 0 4px 16px; border-left: 2px solid var(--accent); }
+.bien .editeur .actions { justify-content: space-between; }
+.stock { margin: 0 0 8px; padding: 0; list-style: none; }
+.stock li { display: flex; align-items: center; gap: 12px; min-height: 44px; border-bottom: 1px dashed var(--filet); }
+.cargaison { counter-reset: unite; }
+.cargaison li { counter-increment: unite; }
+.cargaison li::before { content: counter(unite) "."; width: 1.6em; text-align: right; color: var(--encre-douce); }
+.bien .ajout { margin: 6px 0 0; }
+.cale { display: flex; align-items: baseline; gap: 8px; margin: 14px 0 6px; }
+.cale .compte { font: 400 17px/1 var(--police-texte); }
+.navire-type { font-style: italic; }
+.champs-lieu, .champs-navire { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; align-items: end; }
+.champs-lieu.sans-somme { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.champs-lieu > input[type="text"], .champs-navire > input[type="text"] { grid-column: 1 / -1; }
+.champs-navire { grid-template-columns: minmax(0, 1fr) 7em; }
+.champs-lieu label, .champs-navire label { display: grid; gap: 2px; min-width: 0; }
+.champs-lieu .legende, .champs-navire .legende { font-size: 14px; }
+@media (max-width: 520px) {
+  .rubriques-fiche { grid-template-columns: repeat(4, auto); }
+  .rubriques-fiche a { font-size: 17px; }
+}

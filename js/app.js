@@ -5,6 +5,7 @@
 // Lot v0.4 — la route de l'éditeur du bonus d'un objet, #/perso/<id>/possessions/<index>.
 // Lot v0.6 — les rubriques Aventure et Combats, et ce qu'elles ouvrent : #/perso/<id>/aventure|combats/<ouvert>.
 // Lot v0.7 — la rubrique Codes, #/perso/<id>/codes : elle n'ouvre rien.
+// Lot v0.8 — la rubrique Biens, #/perso/<id>/biens[/<ouvert>] ; les Possessions ouvrent aussi un lieu de stockage.
 import { chargerLangue, choisirLangue, traduirePage } from './i18n.js';
 import { lire } from './sauvegarde.js';
 import { ecouterInstallation, surveillerControleur } from './pwa.js';
@@ -46,7 +47,7 @@ window.__FLH__ = { importer };
 
 // Les routes sont des ancres. Toute route inconnue mène à l'accueil. `page` nomme la page affichée : le haut de
 // page n'est remis que quand elle change (lot v0.3).
-const RUBRIQUES = ['statistiques', 'possessions', 'cultes', 'aventure', 'combats', 'codes'];
+const RUBRIQUES = ['statistiques', 'possessions', 'cultes', 'aventure', 'combats', 'codes', 'biens'];
 
 function analyserRoute(hash) {
   const morceaux = hash.replace(/^#\/?/, '').split('/');
@@ -83,8 +84,8 @@ function analyserRoute(hash) {
     // liste) ; la page reste celle des Possessions, l'ouverture ne ramène pas en haut.
     const objet = morceaux[2] === 'possessions' && morceaux.length === 4 && /^(0|[1-9][0-9]*)$/.test(morceaux[3]) ? Number(morceaux[3]) : null;
     // Lot v0.6 — #/perso/<id>/aventure/<ouvert>, #/perso/<id>/combats/<ouvert> : le quatrième morceau tel quel (la
-    // fiche le lit) ; la page reste celle de la rubrique.
-    const ouvert = (morceaux[2] === 'aventure' || morceaux[2] === 'combats') && morceaux.length === 4 ? morceaux[3] : null;
+    // fiche le lit) ; la page reste celle de la rubrique. Lot v0.8 — de même pour biens et possessions.
+    const ouvert = ['aventure', 'combats', 'biens', 'possessions'].includes(morceaux[2]) && morceaux.length === 4 ? morceaux[3] : null;
     return { vue: vueFiche, onglet: 'accueil', page: `perso/${id}/${rubrique}`, id, rubrique, deplie, objet, ouvert };
   }
   return accueil;

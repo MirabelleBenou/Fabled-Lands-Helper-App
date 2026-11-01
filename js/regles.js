@@ -5,6 +5,7 @@
 // Lot v0.6 — le journal : la section en cours et le chemin parcouru, les quêtes, les notes, les combats. Rien n'y
 // est calculé : ni jet, ni dégât, ni issue de combat.
 // Lot v0.7 — les codes et les cases de section cochés, les codes liés d'une quête. Rien n'y est vérifié.
+// Lot v0.8 — les biens : les possessions stockées, les investissements, les dépôts et le navire. Rien n'y est calculé.
 export const COMPETENCES = ['charisme', 'combat', 'magie', 'piete', 'exploration', 'adresse'];
 
 // Lot v0.4 — les cibles d'un bonus d'objet : les six compétences, dans l'ordre de COMPETENCES, puis la Défense.
@@ -420,5 +421,142 @@ export function retirerCodeQuete(personnage, index, rang) {
   if (!dansListe(personnage.quetes, index) || !dansListe(personnage.quetes[index].codes, rang)) return null;
   const nouveau = copie(personnage);
   nouveau.quetes[index].codes.splice(rang, 1);
+  return nouveau;
+}
+
+// ---- Lot v0.8 — les biens : les possessions stockées, les investissements, les dépôts, le navire ---------------
+
+// Les qualités d'équipage d'un navire, de la pire à la meilleure.
+export const EQUIPAGES = ['mauvais', 'moyen', 'bon', 'hors-pair'];
+
+const texteSaisi = (valeur) => String(valeur ?? '').trim();
+
+// Un livre ou une section saisis : un entier ≥ 1, sinon null (vide compris, sans refus).
+function repereSaisi(valeur) {
+  const n = entierSaisi(valeur);
+  return n !== null && n >= 1 ? n : null;
+}
+
+// Une somme ou une cargaison maximale saisie : vide → 0 ; un entier ≥ 0 ; sinon null (refus).
+function positifSaisi(valeur) {
+  if (texteSaisi(valeur) === '') return 0;
+  const n = entierSaisi(valeur);
+  return n !== null && n >= 0 ? n : null;
+}
+
+// Le lieu saisi pour la liste `liste` (stockees, investissements ou depots) : l'entrée, ses clés dans l'ordre, ou
+// null (refus : lieu vide, ou somme qui n'est ni vide ni un entier ≥ 0).
+function lieuSaisi(liste, saisie) {
+  const lieu = texteSaisi(saisie?.lieu);
+  if (lieu === '') return null;
+  const livre = repereSaisi(saisie?.livre);
+  const section = repereSaisi(saisie?.section);
+  if (liste === 'stockees') return { lieu, livre, section, objets: [] };
+  const somme = positifSaisi(saisie?.somme);
+  if (somme === null) return null;
+  if (liste === 'investissements') return { lieu, livre, section, somme };
+  return { lieu, livre, section, conditions: texteSaisi(saisie?.conditions), somme };
+}
+
+// Le lieu saisi s'ajoute à la fin de la liste ; refus → null.
+export function ajouterLieu(personnage, liste, saisie) {
+  const entree = lieuSaisi(liste, saisie);
+  if (entree === null) return null;
+  const nouveau = copie(personnage);
+  nouveau[liste].push(entree);
+  return nouveau;
+}
+
+// Les champs du lieu saisi remplacent ceux de l'entrée `index` ; ses objets (stockées) et ses champs inconnus
+// restent. Index hors de la liste ou refus → null.
+export function modifierLieu(personnage, liste, index, saisie) {
+  if (!dansListe(personnage[liste], index)) return null;
+  const entree = lieuSaisi(liste, saisie);
+  if (entree === null) return null;
+  delete entree.objets;
+  const nouveau = copie(personnage);
+  nouveau[liste][index] = { ...nouveau[liste][index], ...entree };
+  return nouveau;
+}
+
+// La somme d'un investissement ou d'un dépôt par « − » et « + » : elle reste ≥ 0 ; index hors de la liste → null.
+export function changerSomme(personnage, liste, index, delta) {
+  if (!dansListe(personnage[liste], index)) return null;
+  const cible = personnage[liste][index].somme + delta;
+  if (cible < 0) return null;
+  const nouveau = copie(personnage);
+  nouveau[liste][index].somme = cible;
+  return nouveau;
+}
+
+// Un objet s'ajoute à la fin de ceux du lieu de stockage `index` (doublons permis) ; texte vide ou index hors de la
+// liste → null.
+export function ajouterObjetStocke(personnage, index, texte) {
+  const propre = texteSaisi(texte);
+  if (propre === '' || !dansListe(personnage.stockees, index)) return null;
+  const nouveau = copie(personnage);
+  nouveau.stockees[index].objets.push(propre);
+  return nouveau;
+}
+
+export function retirerObjetStocke(personnage, index, rang) {
+  if (!dansListe(personnage.stockees, index) || !dansListe(personnage.stockees[index].objets, rang)) return null;
+  const nouveau = copie(personnage);
+  nouveau.stockees[index].objets.splice(rang, 1);
+  return nouveau;
+}
+
+// Le navire saisi : { nom, type, equipage, cargaison_max, amarrage }, ou null (refus : nom vide, équipage hors de
+// EQUIPAGES, cargaison maximale qui n'est ni vide ni un entier ≥ 0).
+function navireSaisi(saisie) {
+  const nom = texteSaisi(saisie?.nom);
+  const equipage = saisie?.equipage;
+  const max = positifSaisi(saisie?.cargaison_max);
+  if (nom === '' || !EQUIPAGES.includes(equipage) || max === null) return null;
+  return { nom, type: texteSaisi(saisie?.type), equipage, cargaison_max: max, amarrage: texteSaisi(saisie?.amarrage) };
+}
+
+// Un navire, s'il n'y en a pas déjà un ; sa cale vide.
+export function acquerirNavire(personnage, saisie) {
+  if (personnage.navire !== null) return null;
+  const lu = navireSaisi(saisie);
+  if (lu === null) return null;
+  const nouveau = copie(personnage);
+  nouveau.navire = { ...lu, cargaison: [] };
+  return nouveau;
+}
+
+// Les cinq champs saisis changent ; la cargaison et les champs inconnus restent.
+export function modifierNavire(personnage, saisie) {
+  if (personnage.navire === null) return null;
+  const lu = navireSaisi(saisie);
+  if (lu === null) return null;
+  const nouveau = copie(personnage);
+  nouveau.navire = { ...nouveau.navire, ...lu };
+  return nouveau;
+}
+
+export function retirerNavire(personnage) {
+  if (personnage.navire === null) return null;
+  const nouveau = copie(personnage);
+  nouveau.navire = null;
+  return nouveau;
+}
+
+// Une unité de cargaison s'ajoute à la fin (doublons permis), tant que la cale n'est pas pleine. Une cargaison
+// maximale abaissée sous le nombre d'unités ne retire rien.
+export function ajouterCargaison(personnage, texte) {
+  const propre = texteSaisi(texte);
+  const { navire } = personnage;
+  if (propre === '' || navire === null || navire.cargaison.length >= navire.cargaison_max) return null;
+  const nouveau = copie(personnage);
+  nouveau.navire.cargaison.push(propre);
+  return nouveau;
+}
+
+export function retirerCargaison(personnage, rang) {
+  if (personnage.navire === null || !dansListe(personnage.navire.cargaison, rang)) return null;
+  const nouveau = copie(personnage);
+  nouveau.navire.cargaison.splice(rang, 1);
   return nouveau;
 }
