@@ -708,6 +708,6 @@ input:disabled, .bouton:disabled { opacity: .5; cursor: default; }
 .champs-lieu label, .champs-navire label { display: grid; gap: 2px; min-width: 0; }
 .champs-lieu .legende, .champs-navire .legende { font-size: 14px; }
 @media (max-width: 520px) {
-  .rubriques-fiche { grid-template-columns: repeat(4, auto); }
+  .rubriques-fiche { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 0 16px; }
   .rubriques-fiche a { font-size: 17px; }
 }

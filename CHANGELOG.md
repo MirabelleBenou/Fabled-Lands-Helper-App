@@ -3,6 +3,13 @@
 *Une entrée par version, la plus récente en tête ; sous chaque entrée, les fichiers touchés, en sous-puces à deux
 espaces de retrait.*
 
+## v0.8.1 — 2026-11-01
+
+- Correctif : au téléphone, les onglets de la fiche passent à la ligne d'eux-mêmes ; sur un écran étroit, ils ne dépassent plus à droite et le bouton-dé reste visible.
+  - `css/app.css` : la règle des onglets de la fiche au téléphone (`.rubriques-fiche`, sous `max-width: 520px`) : rangée souple qui passe à la ligne
+  - `js/version.js` : `v0.8.1` (le cache hors ligne devient `flh-v0.8.1`)
+  - `CHANGELOG.md` : cette entrée
+
 ## v0.8 — 2026-11-01
 
 - Les biens : une rubrique « Biens » sur la fiche, avec les investissements et les dépôts (une carte par lieu : sa section en pastille, sa somme à − / +, les conditions d'un dépôt) puis le navire (son nom, son type, la qualité de son équipage, son lieu d'amarrage et sa cargaison, une ligne par unité, « n / max ») ; dans Possessions, sous les possessions transportées, les possessions stockées, une carte par lieu. L'application ne calcule rien. Après un toucher, le focus revient à l'élément touché (sauvegarde au schéma 6).
