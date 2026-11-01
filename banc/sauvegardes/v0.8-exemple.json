@@ -1,0 +1,585 @@
+{
+  "format": "fabled-lands-helper",
+  "schema": 6,
+  "exporte_le": "2026-10-25T18:00:00.000Z",
+  "personnages": [
+    {
+      "id": "m-liana",
+      "nom": "Liana la Vive",
+      "profession": "Voyageuse",
+      "niveau": 1,
+      "section_en_cours": {
+        "livre": 1,
+        "section": 10
+      },
+      "cree_le": "2026-10-24T09:00:00.000Z",
+      "modifie_le": "2026-10-24T11:00:00.000Z",
+      "endurance": {
+        "max": 9,
+        "actuelle": 6
+      },
+      "competences": {
+        "charisme": {
+          "initiale": 2,
+          "actuelle": 2,
+          "bonus": [
+            {
+              "valeur": -1,
+              "raison": "Cicatrice au visage"
+            }
+          ]
+        },
+        "combat": {
+          "initiale": 5,
+          "actuelle": 5,
+          "bonus": []
+        },
+        "magie": {
+          "initiale": 2,
+          "actuelle": 2,
+          "bonus": []
+        },
+        "piete": {
+          "initiale": 3,
+          "actuelle": 3,
+          "bonus": []
+        },
+        "exploration": {
+          "initiale": 6,
+          "actuelle": 6,
+          "bonus": []
+        },
+        "adresse": {
+          "initiale": 4,
+          "actuelle": 4,
+          "bonus": []
+        }
+      },
+      "defense": {
+        "bonus": []
+      },
+      "bourse": 41,
+      "possessions": [
+        {
+          "texte": "Lance de qualité",
+          "bonus": {
+            "cible": "combat",
+            "valeur": 1
+          }
+        },
+        {
+          "texte": "Gilet en cuir",
+          "bonus": {
+            "cible": "defense",
+            "valeur": 1
+          }
+        },
+        {
+          "texte": "Corde",
+          "bonus": null
+        },
+        {
+          "texte": "Épée enchantée",
+          "bonus": {
+            "cible": "combat",
+            "valeur": 2
+          }
+        },
+        {
+          "texte": "Lanterne",
+          "bonus": null
+        },
+        {
+          "texte": "Paquet de vivres",
+          "bonus": null
+        },
+        {
+          "texte": "Anneau terni",
+          "bonus": {
+            "cible": "charisme",
+            "valeur": -1
+          }
+        }
+      ],
+      "titres": [
+        "Ami des Rangers de Sokara"
+      ],
+      "benedictions": [
+        {
+          "origine": "Alvir et Valmir",
+          "consequences": "Relancer un jet d'Exploration raté, une fois."
+        }
+      ],
+      "maledictions": [],
+      "resurrections": [],
+      "histoire": "Partie de Sokar pour retrouver son frère.",
+      "pretire": "liana",
+      "historique": [
+        {
+          "livre": 1,
+          "section": 1
+        },
+        {
+          "livre": 1,
+          "section": 15
+        },
+        {
+          "livre": 1,
+          "section": 87
+        },
+        {
+          "livre": 1,
+          "section": 112
+        },
+        {
+          "livre": 1,
+          "section": 60
+        },
+        {
+          "livre": 1,
+          "section": 230
+        },
+        {
+          "livre": 1,
+          "section": 87
+        },
+        {
+          "livre": 1,
+          "section": 301
+        },
+        {
+          "livre": 1,
+          "section": 44
+        },
+        {
+          "livre": 1,
+          "section": 128
+        },
+        {
+          "livre": 1,
+          "section": 77
+        },
+        {
+          "livre": 1,
+          "section": 163
+        }
+      ],
+      "quetes": [
+        {
+          "titre": "Retrouver mon frère",
+          "personnages": "Aldo, mon frère ; Teodor, le marchand du port",
+          "sections": [
+            {
+              "livre": 1,
+              "section": 112
+            },
+            {
+              "livre": 1,
+              "section": 87
+            }
+          ],
+          "terminee": false,
+          "codes": [
+            "Aide",
+            "Alissia"
+          ]
+        },
+        {
+          "titre": "Livrer la lettre du capitaine",
+          "personnages": "Capitaine Orlo",
+          "sections": [
+            {
+              "livre": 1,
+              "section": 60
+            }
+          ],
+          "terminee": true,
+          "codes": []
+        },
+        {
+          "titre": "Rapporter une plume d'aigle blanc",
+          "personnages": "La vieille Hesta",
+          "sections": [],
+          "terminee": false,
+          "codes": []
+        }
+      ],
+      "notes": [
+        {
+          "texte": "Le marchand du port rachète les fourrures à bon prix.",
+          "livre": 1,
+          "section": 87,
+          "ecrite_le": "2026-10-24T18:40:00.000Z"
+        },
+        {
+          "texte": "Ne pas reprendre la route du nord sans une arme correcte.\nDemander l'escorte à la garde.",
+          "livre": 1,
+          "section": 112,
+          "ecrite_le": "2026-10-24T19:05:00.000Z"
+        },
+        {
+          "texte": "Le temple accepte les dons à partir de 10 chardes.",
+          "livre": 1,
+          "section": 163,
+          "ecrite_le": "2026-10-25T17:20:00.000Z"
+        }
+      ],
+      "combats": [
+        {
+          "nom": "Brigand des collines",
+          "combat": 5,
+          "defense": 8,
+          "endurance": {
+            "max": 12,
+            "actuelle": 0
+          },
+          "livre": 1,
+          "section": 230,
+          "termine": true
+        },
+        {
+          "nom": "Loup affamé",
+          "combat": 4,
+          "defense": 6,
+          "endurance": {
+            "max": 9,
+            "actuelle": 5
+          },
+          "livre": 1,
+          "section": 192,
+          "termine": false
+        }
+      ],
+      "codes": [
+        "Aide",
+        "Almanach",
+        "Artère",
+        "Azur"
+      ],
+      "cases": [
+        {
+          "livre": 1,
+          "section": 10,
+          "libelle": "",
+          "rangs": [
+            0,
+            1
+          ]
+        },
+        {
+          "livre": 1,
+          "section": 19,
+          "libelle": "",
+          "rangs": [
+            0
+          ]
+        },
+        {
+          "livre": 1,
+          "section": 91,
+          "libelle": "",
+          "rangs": [
+            0
+          ]
+        }
+      ],
+      "stockees": [
+        {
+          "lieu": "Chambre louée au port",
+          "livre": 1,
+          "section": 42,
+          "objets": [
+            "Cotte de mailles",
+            "Livre de prières",
+            "Paquet de vivres"
+          ]
+        },
+        {
+          "lieu": "Coffre chez l'oncle",
+          "livre": null,
+          "section": null,
+          "objets": []
+        }
+      ],
+      "investissements": [
+        {
+          "lieu": "Guilde des marchands du port",
+          "livre": 1,
+          "section": 116,
+          "somme": 200
+        }
+      ],
+      "depots": [
+        {
+          "lieu": "Banque du temple",
+          "livre": 1,
+          "section": 192,
+          "conditions": "Retrait à tout moment, contre 10 chardes",
+          "somme": 150
+        }
+      ],
+      "navire": {
+        "nom": "La Mouette grise",
+        "type": "Brick",
+        "equipage": "moyen",
+        "cargaison_max": 3,
+        "amarrage": "Le port",
+        "cargaison": [
+          "Fourrures",
+          "Fourrures"
+        ]
+      }
+    },
+    {
+      "id": "m-tjell",
+      "nom": "Tjell Lao-Me",
+      "profession": "Troubadour / Danseuse",
+      "niveau": 2,
+      "section_en_cours": {
+        "livre": 1,
+        "section": 1
+      },
+      "cree_le": "2026-10-24T09:30:00.000Z",
+      "modifie_le": "2026-10-24T09:30:00.000Z",
+      "endurance": {
+        "max": 9,
+        "actuelle": 9
+      },
+      "competences": {
+        "charisme": {
+          "initiale": 6,
+          "actuelle": 6,
+          "bonus": []
+        },
+        "combat": {
+          "initiale": 4,
+          "actuelle": 4,
+          "bonus": []
+        },
+        "magie": {
+          "initiale": 4,
+          "actuelle": 4,
+          "bonus": []
+        },
+        "piete": {
+          "initiale": 1,
+          "actuelle": 1,
+          "bonus": []
+        },
+        "exploration": {
+          "initiale": 2,
+          "actuelle": 2,
+          "bonus": []
+        },
+        "adresse": {
+          "initiale": 5,
+          "actuelle": 5,
+          "bonus": []
+        }
+      },
+      "defense": {
+        "bonus": [
+          {
+            "valeur": -1,
+            "raison": "Fiche de l'éditeur"
+          }
+        ]
+      },
+      "bourse": 16,
+      "possessions": [
+        {
+          "texte": "Bâton de combat",
+          "bonus": null
+        },
+        {
+          "texte": "Boussole",
+          "bonus": {
+            "cible": "exploration",
+            "valeur": 1
+          }
+        },
+        {
+          "texte": "Gilet en cuir",
+          "bonus": {
+            "cible": "defense",
+            "valeur": 1
+          }
+        }
+      ],
+      "titres": [],
+      "benedictions": [],
+      "maledictions": [],
+      "resurrections": [],
+      "histoire": "",
+      "pretire": "tjell",
+      "codes": [],
+      "cases": [],
+      "stockees": [],
+      "investissements": [],
+      "depots": [],
+      "navire": null
+    },
+    {
+      "id": "m-ysolde",
+      "nom": "Ysolde des Marches",
+      "profession": "Guerrière",
+      "niveau": 3,
+      "section_en_cours": {
+        "livre": 1,
+        "section": 437
+      },
+      "cree_le": "2026-10-24T08:00:00.000Z",
+      "modifie_le": "2026-10-24T08:30:00.000Z",
+      "endurance": {
+        "max": 14,
+        "actuelle": 11
+      },
+      "competences": {
+        "charisme": {
+          "initiale": 3,
+          "actuelle": 3,
+          "bonus": []
+        },
+        "combat": {
+          "initiale": 7,
+          "actuelle": 7,
+          "bonus": []
+        },
+        "magie": {
+          "initiale": 1,
+          "actuelle": 1,
+          "bonus": []
+        },
+        "piete": {
+          "initiale": 4,
+          "actuelle": 4,
+          "bonus": []
+        },
+        "exploration": {
+          "initiale": 3,
+          "actuelle": 3,
+          "bonus": []
+        },
+        "adresse": {
+          "initiale": 2,
+          "actuelle": 2,
+          "bonus": []
+        }
+      },
+      "defense": {
+        "bonus": []
+      },
+      "bourse": 230,
+      "possessions": [
+        {
+          "texte": "Épée de Marlock",
+          "bonus": {
+            "cible": "combat",
+            "valeur": 2
+          }
+        },
+        {
+          "texte": "Cotte de mailles",
+          "bonus": {
+            "cible": "defense",
+            "valeur": 3
+          }
+        },
+        {
+          "texte": "Corde",
+          "bonus": null
+        },
+        {
+          "texte": "Lanterne",
+          "bonus": null
+        },
+        {
+          "texte": "Paquet de vivres",
+          "bonus": null
+        },
+        {
+          "texte": "Fiole de soin",
+          "bonus": null
+        },
+        {
+          "texte": "Carte de Sokara",
+          "bonus": null
+        },
+        {
+          "texte": "Grappin",
+          "bonus": null
+        },
+        {
+          "texte": "Couverture",
+          "bonus": null
+        },
+        {
+          "texte": "Silex",
+          "bonus": null
+        },
+        {
+          "texte": "Gourde",
+          "bonus": null
+        },
+        {
+          "texte": "Talisman",
+          "bonus": null
+        }
+      ],
+      "titres": [
+        "Protectrice de Marlock",
+        "Chevalier de Sokara"
+      ],
+      "benedictions": [],
+      "maledictions": [
+        {
+          "origine": "Marais de Mire",
+          "consequences": "Fièvre des marais : Combat −1 jusqu'à guérison."
+        }
+      ],
+      "resurrections": [
+        {
+          "origine": "Temple de Nagil",
+          "lieu": "Marlock",
+          "livre": 1,
+          "section": 100
+        }
+      ],
+      "histoire": "",
+      "pretire": null,
+      "codes": [],
+      "cases": [],
+      "stockees": [
+        {
+          "lieu": "Entrepôt du marchand",
+          "livre": 2,
+          "section": 15,
+          "objets": [
+            "Rouleau de soie"
+          ]
+        }
+      ],
+      "investissements": [],
+      "depots": [
+        {
+          "lieu": "Comptoir de l'ouest",
+          "livre": 2,
+          "section": 88,
+          "conditions": "",
+          "somme": 0
+        }
+      ],
+      "navire": {
+        "nom": "Le Vif",
+        "type": "",
+        "equipage": "hors-pair",
+        "cargaison_max": 2,
+        "amarrage": "",
+        "cargaison": [
+          "Épices",
+          "Soie"
+        ]
+      }
+    }
+  ]
+}

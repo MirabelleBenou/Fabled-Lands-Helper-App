@@ -3,6 +3,19 @@
 *Une entrée par version, la plus récente en tête ; sous chaque entrée, les fichiers touchés, en sous-puces à deux
 espaces de retrait.*
 
+## v0.8 — 2026-11-01
+
+- Les biens : une rubrique « Biens » sur la fiche, avec les investissements et les dépôts (une carte par lieu : sa section en pastille, sa somme à − / +, les conditions d'un dépôt) puis le navire (son nom, son type, la qualité de son équipage, son lieu d'amarrage et sa cargaison, une ligne par unité, « n / max ») ; dans Possessions, sous les possessions transportées, les possessions stockées, une carte par lieu. L'application ne calcule rien. Après un toucher, le focus revient à l'élément touché (sauvegarde au schéma 6).
+  - `js/sauvegarde.js` : le schéma 6, la complétion de `stockees`, `investissements`, `depots` et `navire`, `personnageNeuf` avec trois listes vides et `navire: null`
+  - `js/regles.js` : `EQUIPAGES`, `ajouterLieu`, `modifierLieu`, `changerSomme`, `ajouterObjetStocke`, `retirerObjetStocke`, `acquerirNavire`, `modifierNavire`, `retirerNavire`, `ajouterCargaison`, `retirerCargaison` ; `retirerDeListe` sert aussi pour les trois listes de lieux
+  - `js/feuille.js` : la rubrique Biens (les investissements, les dépôts, le navire et leurs éditeurs), les possessions stockées dans Possessions, le focus après un toucher rendu à l'élément du même rang
+  - `js/app.js` : la rubrique `biens`, les routes `#/perso/<id>/biens/i<n>`, `d<n>`, `n` et `#/perso/<id>/possessions/s<n>`
+  - `css/app.css` : la feuille de style du lot
+  - `js/version.js` : `v0.8` (le cache hors ligne devient `flh-v0.8`)
+  - `i18n/fr.json`, `i18n/en.json` : 39 clés neuves (245 clés)
+  - `tests/sauvegarde.test.js`, `tests/regles.test.js` : 9 et 15 tests neufs ; les tests du schéma 5 comme schéma courant mis au schéma 6
+  - `CHANGELOG.md` : cette entrée
+
 ## v0.7 — 2026-11-01
 
 - Les codes et les cases de section du livret d'aventure, pour le livre 1 : une rubrique « Codes » sur la fiche, avec les 35 codes à cocher puis les 42 cases de section, ligne par ligne ; les cases de la section en cours s'affichent aussi sous son numéro, dans Aventure, et s'y cochent ; une quête peut lier des codes, choisis dans la liste et montrés en pastilles. Chaque case se coche seule. L'application ne vérifie rien (sauvegarde au schéma 5).
