@@ -3,6 +3,13 @@
 *Une entrée par version, la plus récente en tête ; sous chaque entrée, les fichiers touchés, en sous-puces à deux
 espaces de retrait.*
 
+## v0.8.2 — 2026-11-10
+
+- Correctif : au téléphone, le bouton-dé est plus petit et rentré dans le coin, pour recouvrir moins la page ; le compte d'une rubrique (« 7 / 12 ») ne se coupe plus sur deux lignes.
+  - `css/app.css` : un bloc ajouté à la fin : `.rubrique .compte` sans retour à la ligne ; sous `max-width: 520px`, la barre des dés à 8 px des bords et le bouton-dé à 44 px
+  - `js/version.js` : `v0.8.2` (le cache hors ligne devient `flh-v0.8.2`)
+  - `CHANGELOG.md` : cette entrée
+
 ## v0.8.1 — 2026-11-01
 
 - Correctif : au téléphone, les onglets de la fiche passent à la ligne d'eux-mêmes ; sur un écran étroit, ils ne dépassent plus à droite et le bouton-dé reste visible.

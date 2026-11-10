@@ -711,3 +711,12 @@ input:disabled, .bouton:disabled { opacity: .5; cursor: default; }
   .rubriques-fiche { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 0 16px; }
   .rubriques-fiche a { font-size: 17px; }
 }
+
+/* Lot v0.8.2 — le compte d'une rubrique (« 7 / 12 ») ne se coupe jamais ; au téléphone, le bouton-dé est plus petit
+   (44 px) et rentré dans le coin, pour recouvrir moins de la page. */
+.rubrique .compte { white-space: nowrap; }
+@media (max-width: 520px) {
+  .barre-des { right: max(8px, env(safe-area-inset-right, 0px)); bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+  .bouton-de { width: 44px; height: 44px; padding: 7px; border-radius: 10px; }
+  .bouton-de .point { width: 6px; height: 6px; }
+}
