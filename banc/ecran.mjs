@@ -1,4 +1,4 @@
-// Lot banc-v1 — le contrôle d'écran : sert un dossier, le rend dans Chromium (2 largeurs x 2 langues x
+// Lot banc-v1 — le contrôle d'écran : sert un dossier, le rend dans Chromium (3 largeurs x 2 langues x
 // 2 thèmes par cas), mesure, capture. Usage : node banc/ecran.mjs <dossier> <controles.json> [--sortie <dossier>]
 import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -13,6 +13,7 @@ const USAGE = 'usage : node banc/ecran.mjs <dossier> <controles.json> [--sortie 
 const LARGEURS = [
   { nom: 'tablette', largeur: 800, hauteur: 1280 },
   { nom: 'telephone', largeur: 412, hauteur: 915 },
+  { nom: 'etroit', largeur: 360, hauteur: 800 },
 ];
 const LANGUES = ['fr', 'en'];
 const THEMES = ['jour', 'chandelle'];

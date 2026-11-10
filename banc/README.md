@@ -6,7 +6,7 @@ Outillage du dépôt, hors de l'archive de déploiement (`.gitattributes`). Lot 
 
 L'application est servie par GitHub Pages depuis `git archive` de `main`. Avant de croire qu'un lot est bon, on mesure
 **cette archive, déballée, à froid** : combien de fichiers, si les tests passent, si les traductions se recoupent, si
-rien ne sort sur le réseau, si le cache hors ligne couvre tout, si l'écran tient à deux largeurs, deux langues et deux
+rien ne sort sur le réseau, si le cache hors ligne couvre tout, si l'écran tient à trois largeurs, deux langues et deux
 thèmes.
 
 Quatre instruments, chacun une commande `node …` :
@@ -123,9 +123,9 @@ node banc/ecran.mjs <dossier> <controles.json> [--sortie <dossier>]
 ```
 
 Sert `<dossier>` par un serveur statique du banc (`node:http`, `127.0.0.1`, port libre ; `index.html` pour `/`) et
-rend chaque cas **8 fois** : deux largeurs (`tablette` 800 × 1280, `telephone` 412 × 915 ; pixel 1, écran tactile et
-mobile émulés), deux langues (`fr`, `en`), deux thèmes (`jour`, `chandelle`) ; mouvement réduit. Chaque rendu part d'un
-contexte de navigateur neuf (stockage vide).
+rend chaque cas **12 fois** : trois largeurs (`tablette` 800 × 1280, `telephone` 412 × 915, `etroit` 360 × 800 ; pixel
+1, écran tactile et mobile émulés), deux langues (`fr`, `en`), deux thèmes (`jour`, `chandelle`) ; mouvement réduit.
+Chaque rendu part d'un contexte de navigateur neuf (stockage vide).
 
 **Le fichier de contrôles** (JSON) :
 

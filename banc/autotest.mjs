@@ -106,7 +106,7 @@ try {
   mkdirSync(sortieSain, { recursive: true });
   const sortieEcran = ecran(sain, sortieSain);
   const e = lireEcran(sortieEcran);
-  verifier('sain', 'écran : au moins 16 rendus', e.resume.rendus >= 16 && e.rendus.length === e.resume.rendus, e.resume.rendus);
+  verifier('sain', 'écran : au moins 24 rendus', e.resume.rendus >= 24 && e.rendus.length === e.resume.rendus, e.resume.rendus);
   verifier('sain', 'écran : toutes les vérifications passées', e.resume.ok === e.resume.n && e.resume.n > 0, `${e.resume.ok}/${e.resume.n}`);
   verifier('sain', 'écran : console=0 externes=0 debords=0',
     e.resume.console === 0 && e.resume.externes === 0 && e.resume.debords === 0, `console=${e.resume.console} externes=${e.resume.externes} debords=${e.resume.debords}`);
@@ -117,7 +117,7 @@ try {
     presentes.length >= 16 && attendues.every((n) => presentes.includes(n)), `${presentes.length} captures`);
   verifier('sain', 'écran : rendus dans l\'ordre cas, largeur, langue, thème',
     e.rendus.map((r) => `${r.cas} ${r.largeur} ${r.langue} ${r.theme}`).join('|') ===
-    ['accueil', 'perso'].flatMap((c) => ['tablette', 'telephone'].flatMap((w) => ['fr', 'en'].flatMap((l) => ['jour', 'chandelle'].map((t) => `${c} ${w} ${l} ${t}`)))).join('|'));
+    ['accueil', 'perso'].flatMap((c) => ['tablette', 'telephone', 'etroit'].flatMap((w) => ['fr', 'en'].flatMap((l) => ['jour', 'chandelle'].map((t) => `${c} ${w} ${l} ${t}`)))).join('|'));
 
   // Déterminisme (C6) et dossier mesuré intact (C7).
   verifier('sain', 'rituel déterministe (deux exécutions identiques)', rituel(sain) === sortieRituel);
