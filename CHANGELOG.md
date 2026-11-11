@@ -3,6 +3,16 @@
 *Une entrée par version, la plus récente en tête ; sous chaque entrée, les fichiers touchés, en sous-puces à deux
 espaces de retrait.*
 
+## v0.9 — 2026-11-11
+
+- Réglages › Sauvegarde : un bouton « Partager mes personnages » envoie la sauvegarde au menu de partage de l'appareil (Drive, kDrive ou une autre application), dans un fichier `.flh.txt` au même contenu que l'export ; « Importer un fichier » accepte aussi les `.txt`. Le bouton n'apparaît que si l'appareil sait partager un fichier.
+  - `js/sauvegarde.js` : trois fonctions ajoutées, `nomFichierPartage`, `fichierPartage`, `peutPartagerFichiers`
+  - `js/vues.js` : Réglages › Sauvegarde : le bouton « Partager » et son aide quand l'appareil sait partager un fichier ; le champ d'import accepte aussi les `.txt`
+  - `i18n/fr.json`, `i18n/en.json` : quatre clés ajoutées après `reglages.importer`
+  - `tests/sauvegarde.test.js` : trois tests ajoutés
+  - `js/version.js` : `v0.9` (le cache hors ligne devient `flh-v0.9`)
+  - `CHANGELOG.md` : cette entrée
+
 ## v0.8.2 — 2026-11-10
 
 - Correctif : au téléphone, le bouton-dé est plus petit et rentré dans le coin, pour recouvrir moins la page ; le compte d'une rubrique (« 7 / 12 ») ne se coupe plus sur deux lignes.

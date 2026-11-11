@@ -6,7 +6,7 @@
 import { t } from './i18n.js';
 import { VERSION } from './version.js';
 import { etatCourant, installer, verifierMisesAJour } from './pwa.js';
-import { construireExport, nomFichierExport } from './sauvegarde.js';
+import { construireExport, fichierPartage, nomFichierExport, peutPartagerFichiers } from './sauvegarde.js';
 import { ecrireReglage, estPersistant, lireReglage, stockageDisponible, tousLesPersonnages } from './stockage.js';
 
 // Lot v0.2 — l'aide masquée pour cette ouverture de l'application, même si le réglage n'a pas pu s'écrire.
@@ -109,7 +109,7 @@ export async function vueReglages(contexte) {
     message.className = `message ${genre}`;
     message.textContent = texte;
   };
-  const fichier = el('input', { type: 'file', accept: '.json,application/json', hidden: '', test: 'fichier' });
+  const fichier = el('input', { type: 'file', accept: '.json,.txt,application/json,text/plain', hidden: '', test: 'fichier' });
   fichier.addEventListener('change', async () => {
     const choisi = fichier.files[0];
     fichier.value = '';
@@ -133,6 +133,22 @@ export async function vueReglages(contexte) {
     lien.remove();
     setTimeout(() => URL.revokeObjectURL(adresse), 1000);
   });
+  // Lot v0.9 — « Partager » : le menu de partage de l'appareil, seulement s'il sait partager un fichier.
+  const partageable = peutPartagerFichiers(navigator);
+  let partager = null;
+  if (partageable) {
+    partager = el('button', { classe: 'bouton', type: 'button', test: 'partager', texte: t('reglages.partager') });
+    partager.addEventListener('click', async () => {
+      try {
+        const envoi = fichierPartage(await tousLesPersonnages().catch(() => []));
+        await navigator.share({ files: [envoi] });
+        dire(t('reglages.partage_ok'), 'succes');
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;
+        dire(t('reglages.partage_erreur'), 'echec');
+      }
+    });
+  }
   const importer = el('button', { classe: 'bouton', type: 'button', test: 'importer', texte: t('reglages.importer') });
   importer.addEventListener('click', () => fichier.click());
 
@@ -171,7 +187,8 @@ export async function vueReglages(contexte) {
     el('section', { classe: 'cadre sauvegarde' },
       el('h2', { texte: t('reglages.sauvegarde') }),
       el('p', { texte: t('reglages.sauvegarde_aide') }),
-      el('div', { classe: 'actions' }, exporter, importer, fichier),
+      ...(partageable ? [el('p', { test: 'partage-aide', texte: t('reglages.partage_aide') })] : []),
+      el('div', { classe: 'actions' }, ...(partageable ? [exporter, partager, importer] : [exporter, importer]), fichier),
       message,
       stockage),
     el('section', { classe: 'cadre', test: 'application' },

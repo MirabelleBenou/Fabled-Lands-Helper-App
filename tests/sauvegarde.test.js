@@ -7,9 +7,10 @@
 // section), la complétion des trois listes neuves.
 // Lot v0.8 — le schéma 6 : les tests du schéma 5 comme schéma courant mis au schéma 6 (les biens), la complétion des
 // biens.
+// Lot v0.9 — le partage : le nom, le fichier et le test de l'appareil.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SCHEMA, completerPersonnage, construireExport, lire, nomFichierExport, personnageNeuf } from '../js/sauvegarde.js';
+import { SCHEMA, completerPersonnage, construireExport, fichierPartage, lire, nomFichierExport, nomFichierPartage, peutPartagerFichiers, personnageNeuf } from '../js/sauvegarde.js';
 import { defense } from '../js/regles.js';
 
 // Lot v0.6 — le journal vide (ce que reçoit un personnage des schémas 1, 2 et 3).
@@ -201,6 +202,36 @@ test('construireExport écrit le fichier du schéma 6, et lire le relit', () => 
 
 test('nomFichierExport porte la date locale du jour', () => {
   assert.equal(nomFichierExport(new Date(2026, 9, 3, 12, 0, 0)), 'fabled-lands-helper-2026-10-03.flh.json');
+});
+
+// Lot v0.9 — le partage.
+test('nomFichierPartage : le nom de l\'export, avec .txt à la place de .json', () => {
+  const date = new Date(2026, 9, 3, 12, 0, 0);
+  assert.equal(nomFichierPartage(date), 'fabled-lands-helper-2026-10-03.flh.txt');
+  assert.equal(nomFichierPartage(date), nomFichierExport(date).replace(/\.json$/, '.txt'));
+});
+
+test('fichierPartage : nom, type text/plain, contenu égal à l\'export et relu sans perte', async () => {
+  const date = new Date(2026, 9, 3, 12, 0, 0);
+  const personnages = [personnageNeuf('Dalia', 'Voleuse', date, 'id-fixe')];
+  const fichier = fichierPartage(personnages, date);
+  assert.equal(fichier.name, 'fabled-lands-helper-2026-10-03.flh.txt');
+  assert.equal(fichier.type, 'text/plain');
+  const contenu = await fichier.text();
+  assert.equal(contenu, JSON.stringify(construireExport(personnages, date), null, 2));
+  assert.deepEqual(lire(JSON.parse(contenu)).personnages, lire(construireExport(personnages, date)).personnages);
+});
+
+test('peutPartagerFichiers : faux sans canShare, qui lève ou qui refuse ; vrai si l\'appareil accepte un .txt', () => {
+  assert.equal(peutPartagerFichiers(undefined), false);
+  assert.equal(peutPartagerFichiers({}), false);
+  assert.equal(peutPartagerFichiers({ canShare: () => { throw new Error('non'); } }), false);
+  assert.equal(peutPartagerFichiers({ canShare: () => false }), false);
+  let recu = null;
+  assert.equal(peutPartagerFichiers({ canShare: (donnees) => { recu = donnees; return true; } }), true);
+  assert.equal(recu.files.length, 1);
+  assert.equal(recu.files[0].type, 'text/plain');
+  assert.match(recu.files[0].name, /\.txt$/);
 });
 
 test('personnageNeuf : niveau 1, livre 1 section 1, identifiant et dates posés, feuille neutre du schéma 2', () => {

@@ -259,6 +259,27 @@ export function nomFichierExport(maintenant = new Date()) {
   return `fabled-lands-helper-${jour}.flh.json`;
 }
 
+// Lot v0.9 — le partage : le même fichier que l'export, sous un nom en .txt (Chromium ne partage pas le .json).
+export function nomFichierPartage(maintenant = new Date()) {
+  return nomFichierExport(maintenant).replace(/\.json$/, '.txt');
+}
+
+// Lot v0.9 — le fichier remis au menu de partage : le contenu de l'export, de type text/plain.
+export function fichierPartage(personnages, maintenant = new Date()) {
+  const contenu = JSON.stringify(construireExport(personnages, maintenant), null, 2);
+  return new File([contenu], nomFichierPartage(maintenant), { type: 'text/plain' });
+}
+
+// Lot v0.9 — vrai si l'appareil sait partager un fichier texte.
+export function peutPartagerFichiers(nav) {
+  try {
+    if (!nav || typeof nav.canShare !== 'function') return false;
+    return nav.canShare({ files: [new File([''], 'essai.txt', { type: 'text/plain' })] }) === true;
+  } catch {
+    return false;
+  }
+}
+
 // Un personnage neuf : niveau 1, livre 1 section 1 ; lot v0.3 — sa feuille aux valeurs neutres du schéma 2 ;
 // lot v0.6 — les quatre listes du journal, vides ; lot v0.7 — les codes et les cases de section, vides ;
 // lot v0.8 — les biens : trois listes vides, pas de navire.
