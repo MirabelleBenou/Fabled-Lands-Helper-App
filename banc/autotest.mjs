@@ -47,6 +47,13 @@ function lancer(script, arguments_) {
   return r.stdout;
 }
 
+// Lot banc-v3 — une exécution de l'écran avec une variable d'échec de lancement posée pour elle seule.
+function ecranAvecEchecs(c, echecs) {
+  const r = spawnSync(process.execPath, [join(BANC, 'ecran.mjs'), c.app, CONTROLES, '--sortie', join(c.racine, 'sorties-echecs')],
+    { encoding: 'utf8', timeout: 600000, maxBuffer: 64 * 1024 * 1024, env: { ...process.env, BANC_ECHECS_LANCEMENT: String(echecs) } });
+  return { code: r.status, sortie: r.stdout ?? '', erreur: r.stderr ?? '' };
+}
+
 const rituel = (c) => lancer('rituel.mjs', [c.app, '--sauvegardes', c.sauvegardes]);
 const ecran = (c, sortie) => lancer('ecran.mjs', [c.app, CONTROLES, '--sortie', sortie ?? join(c.racine, 'sorties')]);
 
@@ -122,6 +129,17 @@ try {
   // Déterminisme (C6) et dossier mesuré intact (C7).
   verifier('sain', 'rituel déterministe (deux exécutions identiques)', rituel(sain) === sortieRituel);
   verifier('sain', 'écran déterministe (lignes de rendu identiques sur deux exécutions)', ecran(sain) === sortieEcran);
+  // Lot banc-v3 — la relance d'un lancement en échec, simulé par BANC_ECHECS_LANCEMENT (cette exécution seulement).
+  {
+    const r2 = ecranAvecEchecs(sain, 2);
+    const lignesErreur = lignesDe(r2.erreur);
+    const mr = /^ecran: relances=(\d+)$/.exec(lignesErreur[lignesErreur.length - 1] ?? '');
+    verifier('sain', 'relance : 2 échecs de lancement simulés → sortie identique, relances>=2',
+      r2.code === 0 && r2.sortie === sortieEcran && !!mr && +mr[1] >= 2, `code=${r2.code} ${lignesErreur[lignesErreur.length - 1] ?? ''}`);
+    const r4 = ecranAvecEchecs(sain, 4);
+    verifier('sain', 'relance : 4 échecs de lancement simulés → arrêt',
+      r4.code !== 0 && r4.erreur.includes('Chromium ne démarre pas : lancement simulé en échec'), `code=${r4.code}`);
+  }
   verifier('sain', 'mesure commune déterministe', lancer('ecart.mjs', [sain.app, sain.app]) === 'ecart: ajoutes=0 modifies=0 retires=0\n');
   verifier('sain', 'dossier mesuré intact (empreinte avant = après rituel et écran)', empreinteDossier(sain.app) === empreinteAvant);
 

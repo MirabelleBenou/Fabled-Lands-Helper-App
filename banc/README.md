@@ -178,6 +178,13 @@ ecran: rendus=<n> verifs=<ok>/<n> console=<n> externes=<n> debords=<n> horsligne
 
 (`debords` = nombre de rendus au débord non nul ; `console` et `externes` sont des sommes.)
 
+**Les relances** : le Chromium du paquet plante parfois à son lancement, sans lien avec l'application mesurée.
+Chaque lancement se retente alors, jusqu'à 3 relances ; au-delà, l'instrument s'arrête en erreur comme avant. Le
+nombre de relances de l'exécution s'écrit à la fin, sur la sortie d'erreur seulement, pour que la sortie standard
+reste identique d'une exécution à l'autre : `ecran: relances=<n>`. La variable d'environnement
+`BANC_ECHECS_LANCEMENT=<n>` fait échouer les `<n>` premières tentatives de lancement de l'exécution ; l'auto-essai
+s'en sert pour prouver la relance.
+
 **Les captures** : une par rendu, page entière, en PNG, dans le dossier de sortie (par défaut `banc/sorties/`, ignoré
 par git) : `<cas>_<largeur>_<langue>_<theme>.png` (les caractères autres que lettres, chiffres, `.`, `_`, `-` du nom
 du cas y sont remplacés par `_`). Elles se regardent à part ; le contrôle, lui, se lit sur les lignes.

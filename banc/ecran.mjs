@@ -18,6 +18,12 @@ const LARGEURS = [
 const LANGUES = ['fr', 'en'];
 const THEMES = ['jour', 'chandelle'];
 const DELAI_PRET = 10000;
+const RELANCES_MAX = 3;
+
+// Lot banc-v3 — le compte des relances de lancement : écrit en dernière ligne de la sortie d'erreur, à la fin
+// de l'exécution quelle qu'en soit l'issue ; la sortie standard n'en dit jamais rien.
+let relances = 0;
+process.on('exit', () => { process.stderr.write(`ecran: relances=${relances}\n`); });
 
 let args;
 try {
@@ -26,6 +32,13 @@ try {
   echec(`${e.message}\n${USAGE}`);
 }
 if (args.positionnels.length !== 2) echec(USAGE);
+// Lot banc-v3 — BANC_ECHECS_LANCEMENT=<n> : les <n> premières tentatives de lancement échouent (auto-essai).
+let echecsSimules = 0;
+if (process.env.BANC_ECHECS_LANCEMENT !== undefined) {
+  const valeur = process.env.BANC_ECHECS_LANCEMENT;
+  if (!/^\d+$/.test(valeur)) echec(`BANC_ECHECS_LANCEMENT invalide : ${valeur}`);
+  echecsSimules = Number(valeur);
+}
 const dossier = resolve(args.positionnels[0]);
 const fichierControles = resolve(args.positionnels[1]);
 const dossierSortie = args.options.sortie ? resolve(args.options.sortie) : join(BANC, 'sorties');
@@ -63,9 +76,22 @@ const serveur = await demarrerServeur(dossier);
 // Chromium du paquet (executablePath et args du paquet). Ses arguments le font tourner en un seul
 // processus : fermer un contexte l'arrête. Chaque rendu lance donc son propre navigateur, qu'il ferme
 // à la fin ; le contexte de chaque rendu est ainsi neuf, stockage vide compris.
+// Lot banc-v3 — un lancement en échec se relance (3 relances au plus, sans pause) ; les relances se comptent sur la
+// sortie d'erreur (« ecran: relances=<n> ») ; BANC_ECHECS_LANCEMENT=<n> simule l'échec des <n> premières tentatives.
 let cheminChromium;
 async function lancer() {
-  return playwright.launch({ executablePath: cheminChromium, args: chromium.args, headless: true });
+  for (let tentative = 0; ; tentative += 1) {
+    try {
+      if (echecsSimules > 0) {
+        echecsSimules -= 1;
+        throw new Error('lancement simulé en échec');
+      }
+      return await playwright.launch({ executablePath: cheminChromium, args: chromium.args, headless: true });
+    } catch (e) {
+      if (tentative >= RELANCES_MAX) throw e;
+      relances += 1;
+    }
+  }
 }
 try {
   cheminChromium = await chromium.executablePath();
