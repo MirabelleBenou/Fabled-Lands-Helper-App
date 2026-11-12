@@ -3,6 +3,17 @@
 *Une entrée par version, la plus récente en tête ; sous chaque entrée, les fichiers touchés, en sous-puces à deux
 espaces de retrait.*
 
+## v0.11 — 2026-11-12
+
+- Le décorum illustré : un frontispice gravé en tête de l'accueil (un navire entrant dans un port fortifié) et, sur la fiche, une vignette en tête de chaque rubrique — l'écu, la besace, la flamme sur l'autel, la rose des vents, les épées croisées, la clé, la bourse. Gravure et vignettes prennent la couleur des traits de l'ambiance et sont gardées pour le hors-ligne.
+  - `ornements/frontispice.webp` : fichier neuf, la gravure du frontispice (masque CSS)
+  - `ornements/vignettes.svg` : fichier neuf, les sept vignettes en vues d'un seul SVG
+  - `css/app.css` : bloc ajouté en fin de fichier, le décorum illustré (masques CSS teints par la couleur des traits)
+  - `js/vues.js` : l'accueil porte en premier un élément décoratif `div.frontispice`
+  - `js/feuille.js` : la fiche porte, après les onglets, un élément décoratif `div.vignette` de sa rubrique
+  - `js/precache.js` : `ornements/frontispice.webp` et `ornements/vignettes.svg` ajoutés à la liste hors ligne
+  - `js/version.js` : version `v0.11`
+
 ## v0.10 — 2026-11-12
 
 - L'habillage : des ornements dessinés à la plume pour l'application — une volute au bout du filet de chaque rubrique, des coins aux cadres, un cul-de-lampe en fin de page et, sur la fiche, l'initiale du nom en lettrine. Toutes les pièces tiennent dans un seul fichier, `ornements/ornements.svg`, teint à la couleur des traits de l'ambiance et gardé pour le hors-ligne.

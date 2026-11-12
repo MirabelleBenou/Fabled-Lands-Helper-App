@@ -787,3 +787,38 @@ input:disabled, .bouton:disabled { opacity: .5; cursor: default; }
   -webkit-mask: url(../ornements/ornements.svg#lettrine) center / 100% 100% no-repeat;
   mask: url(../ornements/ornements.svg#lettrine) center / 100% 100% no-repeat;
 }
+
+/* Lot v0.11 — le décorum illustré. Le frontispice : une gravure en masque (ornements/frontispice.webp, l'encre opaque,
+   le papier transparent), teinte par --filet et fondue sur les côtés, en tête de l'accueil. */
+.frontispice {
+  aspect-ratio: 1200 / 362;
+  margin: 4px 0 26px;
+  background: var(--filet);
+  -webkit-mask: url(../ornements/frontispice.webp) center / 100% 100% no-repeat,
+    linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  -webkit-mask-composite: source-in;
+  mask: url(../ornements/frontispice.webp) center / 100% 100% no-repeat intersect,
+    linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+}
+
+/* Les vignettes des rubriques : une tête de chapitre sous les onglets de la fiche, la vignette entre deux filets. Un
+   seul fichier, ornements/vignettes.svg, une vue par rubrique, en masque teint par --filet. */
+.vignette {
+  --vignette: url(../ornements/vignettes.svg#statistiques);
+  height: 52px;
+  margin: 22px 0 4px;
+  opacity: .85;
+  background: var(--filet);
+  -webkit-mask: var(--vignette) center / 52px 52px no-repeat,
+    linear-gradient(#000 0 0) left center / calc(50% - 44px) 1.2px no-repeat,
+    linear-gradient(#000 0 0) right center / calc(50% - 44px) 1.2px no-repeat;
+  mask: var(--vignette) center / 52px 52px no-repeat,
+    linear-gradient(#000 0 0) left center / calc(50% - 44px) 1.2px no-repeat,
+    linear-gradient(#000 0 0) right center / calc(50% - 44px) 1.2px no-repeat;
+}
+.vignette[data-rubrique="possessions"] { --vignette: url(../ornements/vignettes.svg#possessions); }
+.vignette[data-rubrique="cultes"] { --vignette: url(../ornements/vignettes.svg#cultes); }
+.vignette[data-rubrique="aventure"] { --vignette: url(../ornements/vignettes.svg#aventure); }
+.vignette[data-rubrique="combats"] { --vignette: url(../ornements/vignettes.svg#combats); }
+.vignette[data-rubrique="codes"] { --vignette: url(../ornements/vignettes.svg#codes); }
+.vignette[data-rubrique="biens"] { --vignette: url(../ornements/vignettes.svg#biens); }

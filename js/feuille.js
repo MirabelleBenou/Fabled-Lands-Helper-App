@@ -1416,6 +1416,8 @@ export async function vueFiche(contexte, route) {
   }
   // Lot v0.10 — l'initiale du nom en lettrine : la première unité (un point de code), puis le reste en texte.
   const [initiale = '', ...suite] = Array.from(p.nom);
-  return [el('h1', { test: 'nom' }, el('span', { classe: 'lettrine', texte: initiale }), ...(suite.length ? [suite.join('')] : [])), ligne, onglets, ...contenu,
+  return [el('h1', { test: 'nom' }, el('span', { classe: 'lettrine', texte: initiale }), ...(suite.length ? [suite.join('')] : [])), ligne, onglets,
+    // Lot v0.11 — la vignette de la rubrique, en tête de son contenu.
+    el('div', { classe: 'vignette', 'data-rubrique': route.rubrique, 'aria-hidden': 'true' }), ...contenu,
     el('div', { classe: 'marge-des', 'aria-hidden': 'true' }), await barreDes()];
 }

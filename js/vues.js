@@ -81,7 +81,8 @@ export async function vueAccueil() {
   const etat = etatCourant();
   const masquee = aideMasqueeCetteFois || (await lireReglage('aide_installation').catch(() => null)) === 'masquee';
   const aide = etat === 'installee' || masquee ? [] : [aideInstallation(etat)];
-  return [el('h1', { texte: t('accueil.titre') }), el('p', {}, nouveau), suite, ...aide];
+  // Lot v0.11 — le frontispice : une gravure décorative en tête de l'accueil.
+  return [el('div', { classe: 'frontispice', 'aria-hidden': 'true' }), el('h1', { texte: t('accueil.titre') }), el('p', {}, nouveau), suite, ...aide];
 }
 
 function liste(nom, test, options, valeur, surChangement) {
