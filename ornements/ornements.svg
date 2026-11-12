@@ -6,7 +6,7 @@
 <view id="coin-hd" viewBox="26 20 26 26"/>
 <view id="coin-bg" viewBox="52 20 26 26"/>
 <view id="coin-bd" viewBox="78 20 26 26"/>
-<view id="cul-de-lampe" viewBox="0 50 180 30"/>
+<view id="cul-de-lampe" viewBox="0 64 180 30"/>
 <view id="lettrine" viewBox="108 0 56 56"/>
 <!-- La volute : 48 × 16 ; le filet y entre à gauche, sur y = 8. -->
 <g transform="translate(0 -16)" stroke-width="1.15">
@@ -28,7 +28,8 @@
 <use href="#c-hg" transform="translate(52 0) scale(-1 1)"/>
 <use href="#c-hg" transform="translate(52 66) scale(1 -1)"/>
 <use href="#c-hg" transform="translate(104 66) scale(-1 -1)"/>
-<!-- Le cul-de-lampe : 180 × 30, centré en (90, 65). -->
+<!-- Le cul-de-lampe : 180 × 30, centré en (90, 79), sous la lettrine. -->
+<g transform="translate(0 14)">
 <g id="cl-d" stroke-width="1.2">
   <circle cx="99.5" cy="65" r="1.2" fill="#000" stroke="none"/>
   <path d="M103.5 65C110 65 113 58 119.5 58C125.5 58 127 63.5 123.4 64.6C121 65.3 119.6 62.8 121.6 62"/>
@@ -38,6 +39,7 @@
 </g>
 <use href="#cl-d" transform="translate(180 0) scale(-1 1)"/>
 <path d="M90 57.4L95.6 65L90 72.6L84.4 65Z" fill="#000" stroke-width=".6"/>
+</g>
 <!-- La lettrine : un cadre double de 56 × 56, tiré à 100 % de la boîte de l'initiale. -->
 <g transform="translate(108 0)" stroke-width="1.2">
   <rect x="2.5" y="2.5" width="51" height="51" rx="1"/>
