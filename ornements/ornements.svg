@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 184 112" fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round">
+<!-- Lot v0.10 — les ornements à la plume, propres à l'application. Une vue par pièce ; chaque pièce sert de masque,
+     teint en CSS : seule l'opacité compte, la couleur est celle du trait de l'ambiance. -->
+<view id="volute" viewBox="0 0 48 16"/>
+<view id="coin-hg" viewBox="0 20 26 26"/>
+<view id="coin-hd" viewBox="26 20 26 26"/>
+<view id="coin-bg" viewBox="52 20 26 26"/>
+<view id="coin-bd" viewBox="78 20 26 26"/>
+<view id="cul-de-lampe" viewBox="0 50 180 30"/>
+<view id="lettrine" viewBox="108 0 56 56"/>
+<!-- La volute : 48 × 16 ; le filet y entre à gauche, sur y = 8. -->
+<g transform="translate(0 -16)" stroke-width="1.15">
+  <path d="M0 24H20"/>
+  <path d="M18 24C26 24 31 19.8 29.6 17.6C28.4 15.8 25.6 17.4 27 19.2C27.9 20.3 29.6 19.6 29.6 18.6"/>
+  <path d="M18 24C26 24 31 28.2 29.6 30.4C28.4 32.2 25.6 30.6 27 28.8C27.9 27.7 29.6 28.4 29.6 29.4"/>
+  <path d="M27 24H33"/>
+  <path d="M38.5 20.6L42.2 24L38.5 27.4L34.8 24Z" fill="#000" stroke-width=".6"/>
+  <circle cx="45.6" cy="24" r="1.1" fill="#000" stroke="none"/>
+</g>
+<!-- Le coin : 26 × 26 ; l'angle du cadre tombe au centre du losange, en (6, 6) du coin haut-gauche. -->
+<g id="c-hg" transform="translate(0 20)" stroke-width="1.15">
+  <path d="M6 2.6L9.4 6L6 9.4L2.6 6Z" fill="#000" stroke-width=".6"/>
+  <path d="M11 6C16 6 19.6 8.6 18.4 11.2C17.4 13.2 14.6 12.2 15.4 10.4C15.9 9.4 17.2 9.6 17.2 10.6"/>
+  <path d="M6 11C6 16 8.6 19.6 11.2 18.4C13.2 17.4 12.2 14.6 10.4 15.4C9.4 15.9 9.6 17.2 10.6 17.2"/>
+  <circle cx="22.4" cy="6" r=".9" fill="#000" stroke="none"/>
+  <circle cx="6" cy="22.4" r=".9" fill="#000" stroke="none"/>
+</g>
+<use href="#c-hg" transform="translate(52 0) scale(-1 1)"/>
+<use href="#c-hg" transform="translate(52 66) scale(1 -1)"/>
+<use href="#c-hg" transform="translate(104 66) scale(-1 -1)"/>
+<!-- Le cul-de-lampe : 180 × 30, centré en (90, 65). -->
+<g id="cl-d" stroke-width="1.2">
+  <circle cx="99.5" cy="65" r="1.2" fill="#000" stroke="none"/>
+  <path d="M103.5 65C110 65 113 58 119.5 58C125.5 58 127 63.5 123.4 64.6C121 65.3 119.6 62.8 121.6 62"/>
+  <path d="M103.5 65C118 71 146 70.4 172 65"/>
+  <path d="M136 68.9C140 72.4 145.4 72.6 147 70.6C148.2 69 146.2 67.6 145.2 69"/>
+  <circle cx="176.6" cy="65" r="1" fill="#000" stroke="none"/>
+</g>
+<use href="#cl-d" transform="translate(180 0) scale(-1 1)"/>
+<path d="M90 57.4L95.6 65L90 72.6L84.4 65Z" fill="#000" stroke-width=".6"/>
+<!-- La lettrine : un cadre double de 56 × 56, tiré à 100 % de la boîte de l'initiale. -->
+<g transform="translate(108 0)" stroke-width="1.2">
+  <rect x="2.5" y="2.5" width="51" height="51" rx="1"/>
+  <rect x="6" y="6" width="44" height="44" stroke-width=".7"/>
+  <path d="M2.5 2.5L6 6M53.5 2.5L50 6M2.5 53.5L6 50M53.5 53.5L50 50" stroke-width=".7"/>
+</g>
+</svg>

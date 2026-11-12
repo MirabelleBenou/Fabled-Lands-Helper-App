@@ -720,3 +720,70 @@ input:disabled, .bouton:disabled { opacity: .5; cursor: default; }
   .bouton-de { width: 44px; height: 44px; padding: 7px; border-radius: 10px; }
   .bouton-de .point { width: 6px; height: 6px; }
 }
+
+/* Lot v0.10 — l'habillage : les ornements à la plume. Un seul fichier, ornements/ornements.svg, une vue par pièce ;
+   chaque pièce est un masque teint par --filet, la même pour le jour et la chandelle. Rien n'est posé sur le texte. */
+
+/* Le filet de rubrique finit en volute. */
+.rubrique::after {
+  height: 20px;
+  opacity: .75;
+  -webkit-mask: url(../ornements/ornements.svg#volute) right center / 60px 20px no-repeat,
+    linear-gradient(#000 0 0) left center / calc(100% - 58px) 1.4px no-repeat;
+  mask: url(../ornements/ornements.svg#volute) right center / 60px 20px no-repeat,
+    linear-gradient(#000 0 0) left center / calc(100% - 58px) 1.4px no-repeat;
+}
+
+/* Les coins du cadre à la plume : l'angle du trait tombe au centre du losange. */
+.cadre::after {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  background: var(--filet);
+  pointer-events: none;
+  -webkit-mask: url(../ornements/ornements.svg#coin-hg) left top / 34px 34px no-repeat,
+    url(../ornements/ornements.svg#coin-hd) right top / 34px 34px no-repeat,
+    url(../ornements/ornements.svg#coin-bg) left bottom / 34px 34px no-repeat,
+    url(../ornements/ornements.svg#coin-bd) right bottom / 34px 34px no-repeat;
+  mask: url(../ornements/ornements.svg#coin-hg) left top / 34px 34px no-repeat,
+    url(../ornements/ornements.svg#coin-hd) right top / 34px 34px no-repeat,
+    url(../ornements/ornements.svg#coin-bg) left bottom / 34px 34px no-repeat,
+    url(../ornements/ornements.svg#coin-bd) right bottom / 34px 34px no-repeat;
+}
+
+/* Le cul-de-lampe ferme l'écran ; sur la fiche, il ouvre la marge des dés, qui grandit d'autant. */
+#ecran::after, .marge-des::before {
+  content: "";
+  display: block;
+  width: 180px;
+  height: 30px;
+  margin: 36px auto 0;
+  background: var(--filet);
+  -webkit-mask: url(../ornements/ornements.svg#cul-de-lampe) center / 180px 30px no-repeat;
+  mask: url(../ornements/ornements.svg#cul-de-lampe) center / 180px 30px no-repeat;
+}
+#ecran:has(> .marge-des)::after { display: none; }
+.marge-des { height: 168px; }
+
+/* La lettrine : l'initiale du nom, sur la fiche, dans son cadre double. */
+.lettrine {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.24em;
+  height: 1.24em;
+  margin-right: .12em;
+  padding-top: .08em;
+  font-size: 1.1em;
+  line-height: 1;
+  vertical-align: -.24em;
+}
+.lettrine::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--filet);
+  -webkit-mask: url(../ornements/ornements.svg#lettrine) center / 100% 100% no-repeat;
+  mask: url(../ornements/ornements.svg#lettrine) center / 100% 100% no-repeat;
+}

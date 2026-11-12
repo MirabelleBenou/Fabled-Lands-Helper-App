@@ -3,6 +3,15 @@
 *Une entrée par version, la plus récente en tête ; sous chaque entrée, les fichiers touchés, en sous-puces à deux
 espaces de retrait.*
 
+## v0.10 — 2026-11-12
+
+- L'habillage : des ornements dessinés à la plume pour l'application — une volute au bout du filet de chaque rubrique, des coins aux cadres, un cul-de-lampe en fin de page et, sur la fiche, l'initiale du nom en lettrine. Toutes les pièces tiennent dans un seul fichier, `ornements/ornements.svg`, teint à la couleur des traits de l'ambiance et gardé pour le hors-ligne.
+  - `ornements/ornements.svg` : fichier neuf, les quatre ornements en vues d'un seul SVG
+  - `css/app.css` : bloc ajouté en fin de fichier, l'habillage (masques CSS teints par la couleur des traits)
+  - `js/feuille.js` : le titre de la fiche porte l'initiale du nom dans un `span.lettrine`, puis le reste du nom
+  - `js/precache.js` : `ornements/ornements.svg` ajouté à la liste hors ligne
+  - `js/version.js` : version `v0.10`
+
 ## v0.9 — 2026-11-11
 
 - Réglages › Sauvegarde : un bouton « Partager mes personnages » envoie la sauvegarde au menu de partage de l'appareil (Drive, kDrive ou une autre application), dans un fichier `.flh.txt` au même contenu que l'export ; « Importer un fichier » accepte aussi les `.txt`. Le bouton n'apparaît que si l'appareil sait partager un fichier.

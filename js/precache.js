@@ -32,5 +32,6 @@ export const PRECACHE = [
   'js/version.js',
   'js/vues.js',
   'manifest.webmanifest',
+  'ornements/ornements.svg',
   'sw.js',
 ];

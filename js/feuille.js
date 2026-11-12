@@ -1414,6 +1414,8 @@ export async function vueFiche(contexte, route) {
     const deplie = DEPLIABLES.includes(route.deplie) ? route.deplie : null;
     contenu = rubriqueStatistiques(contexte, p, `${racine}/statistiques`, deplie);
   }
-  return [el('h1', { test: 'nom', texte: p.nom }), ligne, onglets, ...contenu,
+  // Lot v0.10 — l'initiale du nom en lettrine : la première unité (un point de code), puis le reste en texte.
+  const [initiale = '', ...suite] = Array.from(p.nom);
+  return [el('h1', { test: 'nom' }, el('span', { classe: 'lettrine', texte: initiale }), ...(suite.length ? [suite.join('')] : [])), ligne, onglets, ...contenu,
     el('div', { classe: 'marge-des', 'aria-hidden': 'true' }), await barreDes()];
 }
