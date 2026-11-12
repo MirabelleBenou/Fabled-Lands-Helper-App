@@ -5,6 +5,7 @@ banc/               export-ignore
 .github/            export-ignore
 .gitignore          export-ignore
 .gitattributes      export-ignore
+docs/               export-ignore
 
 # Projet neuf : fins de ligne normalisées en LF.
 * text=auto eol=lf

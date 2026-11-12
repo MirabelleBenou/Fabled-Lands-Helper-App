@@ -90,9 +90,10 @@ test('le personnage fabriqué passe lire(construireExport([…])) sans changer',
   assert.deepEqual(relu, personnages);
 });
 
-test('LIENS.pretires est l\'adresse des fiches de l\'éditeur, seule entrée', () => {
-  assert.deepEqual(Object.keys(LIENS), ['pretires']);
+test('LIENS : les fiches de l\'éditeur et le code source, seules entrées', () => {
+  assert.deepEqual(Object.keys(LIENS), ['pretires', 'code']);
   assert.equal(LIENS.pretires, 'https://alkonost-editions.com/collections/livres-jeux/fabled-lands/personnages-pretires/livres-1-2/');
+  assert.equal(LIENS.code, 'https://github.com/MirabelleBenou/Fabled-Lands-Helper-App');
 });
 
 // ---- Lot v0.4 — les objets des pré-tirés --------------------------------------------------------------------

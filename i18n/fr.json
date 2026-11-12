@@ -247,5 +247,7 @@
   "biens.cargaison_vide": "La cale est vide.",
   "biens.cargaison_ajouter": "Nouvelle cargaison",
   "biens.cargaison_pleine": "La cale est pleine : retirez une unité pour en charger une autre.",
-  "biens.navire_retirer": "Retirer le navire"
+  "biens.navire_retirer": "Retirer le navire",
+  "apropos.licence": "Le code de Fabled Lands Helper est un logiciel libre, sous licence GNU AGPL 3.0 ou toute version ultérieure : chacun peut le lire, le reprendre et le modifier, à condition que sa version reste libre et garde les mentions d'auteur. Cette licence ne couvre ni les listes du livret ni les personnages pré-tirés, dont les droits restent à leurs auteurs et à l'éditeur, ni les polices, qui gardent la leur.",
+  "apropos.code": "Voir le code source"
 }

@@ -5,6 +5,7 @@
 // Le texte saisi ou importé n'entre jamais comme HTML : textContent ou création d'éléments.
 import { t } from './i18n.js';
 import { VERSION } from './version.js';
+import { LIENS } from './liens.js';
 import { etatCourant, installer, verifierMisesAJour } from './pwa.js';
 import { construireExport, fichierPartage, nomFichierExport, peutPartagerFichiers } from './sauvegarde.js';
 import { ecrireReglage, estPersistant, lireReglage, stockageDisponible, tousLesPersonnages } from './stockage.js';
@@ -202,7 +203,7 @@ export async function vueReglages(contexte) {
   ];
 }
 
-// Droits et sources : six paragraphes.
+// Droits et sources : huit paragraphes.
 export async function vueApropos() {
   return [
     el('h1', { texte: t('apropos.titre') }),
@@ -212,6 +213,9 @@ export async function vueApropos() {
       el('p', { texte: t('apropos.sources') }),
       el('p', { texte: t('apropos.pretires') }),
       el('p', { texte: t('apropos.polices') }),
+      // Lot v1.0 — la licence du code et le lien vers le code source.
+      el('p', { test: 'licence', texte: t('apropos.licence') }),
+      el('p', {}, el('a', { classe: 'lien', test: 'code-source', href: LIENS.code, target: '_blank', rel: 'noopener', texte: t('apropos.code') })),
       el('p', { texte: t('apropos.donnees') })),
   ];
 }

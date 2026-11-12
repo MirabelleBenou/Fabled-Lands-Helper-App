@@ -2,4 +2,5 @@
 // l'application. C'est le seul endroit du code servi où une adresse http(s) apparaît.
 export const LIENS = {
   pretires: 'https://alkonost-editions.com/collections/livres-jeux/fabled-lands/personnages-pretires/livres-1-2/',
+  code: 'https://github.com/MirabelleBenou/Fabled-Lands-Helper-App',
 };

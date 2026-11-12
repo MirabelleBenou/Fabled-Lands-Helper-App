@@ -3,6 +3,19 @@
 *Une entrée par version, la plus récente en tête ; sous chaque entrée, les fichiers touchés, en sous-puces à deux
 espaces de retrait.*
 
+## v1.0 — 2026-11-12
+
+- La première version publique : le code passe sous licence libre GNU AGPL 3.0 ou ultérieure (fichier `LICENSE`), la page « Droits et sources » le dit et donne le lien vers le code source, et le README présente l'application, captures d'écran à l'appui.
+  - `LICENSE` : fichier neuf, la licence GNU AGPL 3.0
+  - `README.md` : réécrit, présentation de l'application et captures d'écran
+  - `docs/captures/` : dossier neuf, neuf captures d'écran WebP du README (hors de l'archive de déploiement)
+  - `.gitattributes` : une ligne de plus, `docs/` hors de l'archive (`export-ignore`)
+  - `js/liens.js` : entrée `code` ajoutée à `LIENS` (le dépôt public)
+  - `js/vues.js` : « Droits et sources » passe à huit paragraphes (la licence, puis le lien « Voir le code source ») ; import de `LIENS`
+  - `js/version.js` : `v1.0`
+  - `i18n/fr.json`, `i18n/en.json` : deux clés neuves, `apropos.licence` et `apropos.code`
+  - `tests/pretires.test.js` : le test de `LIENS` attend les deux entrées `pretires` et `code`
+
 ## v0.11 — 2026-11-12
 
 - Le décorum illustré : un frontispice gravé en tête de l'accueil (un navire entrant dans un port fortifié) et, sur la fiche, une vignette en tête de chaque rubrique — l'écu, la besace, la flamme sur l'autel, la rose des vents, les épées croisées, la clé, la bourse. Gravure et vignettes prennent la couleur des traits de l'ambiance et sont gardées pour le hors-ligne.

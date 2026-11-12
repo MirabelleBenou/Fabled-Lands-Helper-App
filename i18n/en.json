@@ -247,5 +247,7 @@
   "biens.cargaison_vide": "The hold is empty.",
   "biens.cargaison_ajouter": "New cargo",
   "biens.cargaison_pleine": "The hold is full: remove a unit to load another.",
-  "biens.navire_retirer": "Remove the ship"
+  "biens.navire_retirer": "Remove the ship",
+  "apropos.licence": "The code of Fabled Lands Helper is free software, under the GNU AGPL 3.0 or any later version: anyone may read, reuse and modify it, provided their version stays free and keeps the author notices. This licence covers neither the booklet lists nor the pre-generated characters, whose rights remain with their authors and the publisher, nor the typefaces, which keep their own.",
+  "apropos.code": "View the source code"
 }
